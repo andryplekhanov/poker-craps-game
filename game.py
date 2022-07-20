@@ -4,7 +4,7 @@ import os
 import time
 
 class Game :
-  def __init__(self,dice_list):
+  def __init__(self, dice_list):
     self.dice_list = dice_list
     self.last_winner = 'player'
     self.your_combination = []

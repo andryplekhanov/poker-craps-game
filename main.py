@@ -1,4 +1,4 @@
-tfrom game import *
+from game import *
 from dices import *
 import os
 from result_printer import *

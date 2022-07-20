@@ -5,7 +5,7 @@
 #  напечатать в цикле:  print(dices.print_dice(i)) - возвращает строку
 import random
 
-class Dice_list :
+class Dice_list:
   def __init__(self):
     self.dices = []
 
