@@ -5,6 +5,7 @@ from random import randint
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 
+from tgbot.keyboards.inline import do_roll, bot_roll, players_reroll
 from tgbot.services.printer import print_dice
 
 
@@ -19,67 +20,69 @@ async def check_combination(dice_set: list[int]) -> tuple[int, int, str]:
     if combination_dict_values[0] == 5:
         mark = 10
         summa = sum(dice_set)
-        result = 'Poker'
+        result = 'Покер'
     elif combination_dict_values[0] == 4:
         mark = 9
         summa = sum([key * val for key, val in combination_dict.items() if val == 4])
-        result = 'Quads'
+        result = 'Карэ'
     elif combination_dict_values[0] == 3 and combination_dict_values[1] == 2:
         mark = 8
         summa = sum([key * val for key, val in combination_dict.items() if val == 3 or val == 2])
-        result = 'Full house'
+        result = 'Фул-хаус'
     elif sum(dice_set) == 20 and len(combination_dict_values) == 5:
         mark = 7
         summa = 20
-        result = 'Big straight'
+        result = 'Большой стрейт'
     elif sum(dice_set) == 15 and len(combination_dict_values) == 5:
         mark = 6
         summa = 15
-        result = 'Small straight'
+        result = 'Малый стрейт'
     elif combination_dict_values[0] == 3:
         mark = 5
         summa = sum([key * val for key, val in combination_dict.items() if val == 3])
-        result = 'Set'
+        result = 'Тройка'
     elif combination_dict_values[0] == 2 and combination_dict_values[1] == 2:
         mark = 4
         summa = sum([key * val for key, val in combination_dict.items() if val == 2])
-        result = 'Two pairs'
+        result = 'Две пары'
     elif combination_dict_values[0] == 2:
         mark = 3
         summa = sum([key * val for key, val in combination_dict.items() if val == 2])
-        result = 'Pair'
+        result = 'Пара'
     else:
         mark = 2
         summa = sum(dice_set)
-        result = 'Nothing'
+        result = 'Ничего'
     return mark, summa, result
 
 
-async def play_turn(message: Message):
+async def play_turn(message: Message) -> tuple[int, int, str, list]:
     await sleep(2)
-    dice_set = await roll_dice()
-    mark, summa, result = await check_combination(dice_set)
-    await print_dice(message, dice_set)
-    return mark, summa, result
+    dice_list = await roll_dice()
+    mark, summa, result = await check_combination(dice_list)
+    await print_dice(message, dice_list)
+    await message.delete()
+    return mark, summa, result, dice_list
+
+
+async def ask_reroll(message: Message, state: FSMContext):
+    states = await state.get_data()
+    player_dice_list = states.get('player_dice_list')
+    await message.answer('Выбирай, какие кубики желаешь перебросить и жми "Готово!"',
+                         reply_markup=await players_reroll(player_dice_list))
 
 
 async def play_round(message: Message, state: FSMContext):
     states = await state.get_data()
     round_counter = states.get('round_counter')
     last_winner = states.get('last_winner')
-    await message.answer(f'🔔 ROUND #{round_counter}')
+    player_score = states.get('player_score')
+    bot_score = states.get('bot_score')
+    await message.answer(f'🔔 РАУНД #{round_counter}\n'
+                         f'Ты <b>{player_score}:{bot_score}</b> Я',
+                         parse_mode='html')
 
     if last_winner is None or last_winner == 'player':
-        await message.answer(f'🤵 Your turn...')
-        player_mark, player_summa, player_result = await play_turn(message)
-        await sleep(2)
-        await message.answer(f'👤 My turn...')
-        bot_mark, bot_summa, bot_result = await play_turn(message)
+        await message.answer(f'🤵 Твой бросок...', reply_markup=await do_roll())
     else:
-        await message.answer(f'👤 My turn...')
-        bot_mark, bot_summa, bot_result = await play_turn(message)
-        await sleep(2)
-        await message.answer(f'🤵 Your turn...')
-        player_mark, player_summa, player_result = await play_turn(message)
-    await message.answer(f"🤵 Your result: {player_result} ({player_summa})\n"
-                         f"👤 My result: {bot_result} ({bot_summa})")
+        await message.answer(f'👤 Мой бросок...', reply_markup=await bot_roll())
