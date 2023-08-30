@@ -1,124 +1,85 @@
+from asyncio import sleep
 from collections import Counter
+from random import randint
+
+from aiogram.dispatcher import FSMContext
+from aiogram.types import Message
+
+from tgbot.services.printer import print_dice
 
 
-class Game:
-    def __init__(self, player, computer, dices):
-        self.player1 = player
-        self.player2 = computer
-        self.dices = dices
-        self.winner = None
-        self.game_over = False
+async def roll_dice() -> list[int]:
+    return [randint(1, 6) for _ in range(5)]
 
-    def play_round(self) -> None:
-        if self.check_your_turn():
-            self.player1.roll_dice(self.dices)
-            self.ask_for_reroll()
-            self.player2.roll_dice(self.dices)
-            if self.should_comp_reroll():
-                self.choose_dices_for_comps_reroll()
-            self.set_winner()
-        else:
-            self.player2.roll_dice(self.dices)
-            if self.should_comp_reroll():
-                self.choose_dices_for_comps_reroll()
-            input('\tБросить кубики: нажмите Enter')
-            self.player1.roll_dice(self.dices)
-            self.ask_for_reroll()
-            self.set_winner()
 
-    def ask_for_reroll(self) -> None:
-        print('\tКакие кубики перебросить?\n\t\t135 - перебросить 1й, 3й и 5й кубики, а остальные '
-              'оставить\n\t\t0 - не перебрасывать никакие\n\t\tEnter - перебросить все')
-        reply = input('\t\t')
+async def check_combination(dice_set: list[int]) -> tuple[int, int, str]:
+    combination_dict = Counter(dice_set)  # {5: 4, 6: 1}
+    combination_dict_values = sorted(list(combination_dict.values()), reverse=True)  # [4, 1]
 
-        if reply == '0':
-            return
+    if combination_dict_values[0] == 5:
+        mark = 10
+        summa = sum(dice_set)
+        result = 'Poker'
+    elif combination_dict_values[0] == 4:
+        mark = 9
+        summa = sum([key * val for key, val in combination_dict.items() if val == 4])
+        result = 'Quads'
+    elif combination_dict_values[0] == 3 and combination_dict_values[1] == 2:
+        mark = 8
+        summa = sum([key * val for key, val in combination_dict.items() if val == 3 or val == 2])
+        result = 'Full house'
+    elif sum(dice_set) == 20 and len(combination_dict_values) == 5:
+        mark = 7
+        summa = 20
+        result = 'Big straight'
+    elif sum(dice_set) == 15 and len(combination_dict_values) == 5:
+        mark = 6
+        summa = 15
+        result = 'Small straight'
+    elif combination_dict_values[0] == 3:
+        mark = 5
+        summa = sum([key * val for key, val in combination_dict.items() if val == 3])
+        result = 'Set'
+    elif combination_dict_values[0] == 2 and combination_dict_values[1] == 2:
+        mark = 4
+        summa = sum([key * val for key, val in combination_dict.items() if val == 2])
+        result = 'Two pairs'
+    elif combination_dict_values[0] == 2:
+        mark = 3
+        summa = sum([key * val for key, val in combination_dict.items() if val == 2])
+        result = 'Pair'
+    else:
+        mark = 2
+        summa = sum(dice_set)
+        result = 'Nothing'
+    return mark, summa, result
 
-        reroll_nums_list = [int(num) for num in reply]  # [1, 3, 5]
-        if reroll_nums_list:
-            dices_for_reroll = [dice for ind, dice in enumerate(self.player1.dice_set)
-                                for num in reroll_nums_list if num == ind + 1]   # ['Dice1', 'Dice3', 'Dice5']
-            dices_for_save = list(set(self.player1.dice_set) - set(dices_for_reroll))  # ['Dice2', 'Dice4']
-            self.player1.reroll_dice(dices=self.dices, dices_for_reroll=dices_for_reroll, dices_for_save=dices_for_save)
-            return
 
-        print('\t\tПеребросить все...', end='\t')
-        self.player1.roll_dice(self.dices)
+async def play_turn(message: Message):
+    await sleep(2)
+    dice_set = await roll_dice()
+    mark, summa, result = await check_combination(dice_set)
+    await print_dice(message, dice_set)
+    return mark, summa, result
 
-    def should_comp_reroll(self) -> bool:
-        if self.winner == self.player1:
-            if (self.player2.mark == self.player1.mark) and (self.player2.summa > self.player1.summa):
-                print(f'\t{self.player2.name} решил не перебрасывать')
-                return False
-            elif self.player2.mark > self.player1.mark:
-                print(f'\t{self.player2.name} решил не перебрасывать')
-                return False
-            return True
 
-        if self.player2.mark >= 6:
-            print(f'\t{self.player2.name} решил не перебрасывать')
-            return False
-        return True
+async def play_round(message: Message, state: FSMContext):
+    states = await state.get_data()
+    round_counter = states.get('round_counter')
+    last_winner = states.get('last_winner')
+    await message.answer(f'🔔 ROUND #{round_counter}')
 
-    def choose_dices_for_comps_reroll(self) -> None:
-        if self.player2.mark == 2:
-            print(f'\t{self.player2.name} решил перебросить все...', end='\t')
-            self.player2.roll_dice(self.dices)
-            return
-
-        dices_values = [dice.value for dice in self.player2.dice_set]  # [5, 4, 5, 6, 1]
-        combination_dict = Counter(dices_values)  # {5: 2, 6: 1, 4: 1, 1: 1}
-        dices_for_save = []
-
-        if self.player2.mark == 3 or self.player2.mark == 4:
-            for key, val in combination_dict.items():
-                if val == 2:
-                    for dice in self.player2.dice_set:  # ['Dice5', 'Dice4', 'Dice5', 'Dice6', 'Dice1']
-                        if dice.value == key:
-                            dices_for_save.append(dice)
-        elif self.player2.mark == 5:
-            for key, val in combination_dict.items():
-                if val == 3:
-                    for dice in self.player2.dice_set:  # ['Dice5', 'Dice4', 'Dice5', 'Dice6', 'Dice5']
-                        if dice.value == key:
-                            dices_for_save.append(dice)
-        elif self.player2.mark == 9:
-            for key, val in combination_dict.items():
-                if val == 4:
-                    for dice in self.player2.dice_set:  # ['Dice5', 'Dice5', 'Dice5', 'Dice6', 'Dice5']
-                        if dice.value == key:
-                            dices_for_save.append(dice)
-
-        dices_for_reroll = list(set(self.player2.dice_set) - set(dices_for_save))
-        self.player2.reroll_dice(dices=self.dices, dices_for_reroll=dices_for_reroll, dices_for_save=dices_for_save)
-
-    def check_your_turn(self) -> bool:
-        return self.winner is None or self.winner == self.player1
-
-    def set_winner(self) -> None:
-        if self.game_over:  # Если игра закончена - проверяем очки и устанавливаем победителя
-            if self.player1.score > self.player2.score:
-                self.winner = self.player1
-            elif self.player2.score > self.player1.score:
-                self.winner = self.player2
-            print(f'\nПОБЕДИЛ: {self.winner.name}')
-        else:  # Если игра НЕ закончена - устанавливаем победителя раунда и присваиваем очки
-            if self.player1.mark > self.player2.mark:
-                self.player1.score += 1
-                self.winner = self.player1
-                print(f'\nТы выиграл. У тебя старше комбинация.')
-            elif self.player1.mark < self.player2.mark:
-                self.player2.score += 1
-                self.winner = self.player2
-                print(f'\nКомп выиграл. У него старше комбинация.')
-            else:
-                if self.player1.summa > self.player2.summa:
-                    self.player1.score += 1
-                    self.winner = self.player1
-                    print(f'\nТы выиграл. У тебя больше сумма.')
-                elif self.player1.summa < self.player2.summa:
-                    self.player2.score += 1
-                    self.winner = self.player2
-                    print(f'\nКомп выиграл. У него больше сумма.')
-                else:
-                    print(f'\nНичья.')
+    if last_winner is None or last_winner == 'player':
+        await message.answer(f'🤵 Your turn...')
+        player_mark, player_summa, player_result = await play_turn(message)
+        await sleep(2)
+        await message.answer(f'👤 My turn...')
+        bot_mark, bot_summa, bot_result = await play_turn(message)
+    else:
+        await message.answer(f'👤 My turn...')
+        bot_mark, bot_summa, bot_result = await play_turn(message)
+        await sleep(2)
+        await message.answer(f'🤵 Your turn...')
+        player_mark, player_summa, player_result = await play_turn(message)
+    await message.answer(f"🤵 Your result: {player_result} ({player_summa})\n"
+                         f"👤 My result: {bot_result} ({bot_summa})")

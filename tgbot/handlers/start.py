@@ -1,24 +1,22 @@
 from aiogram import Dispatcher
+from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.types import Message
 
 from tgbot.keyboards.reply import main_actions
-from tgbot.services.dice import DiceSet
-from tgbot.services.game import Game
-from tgbot.services.player import Player
+from tgbot.services.game import play_round
 
 
 async def user_start(message: Message):
-    await message.reply("Hello, user!", reply_markup=main_actions)
+    await message.reply("Привет! Жми старт, чтобы бросить кубики и начать игру",
+                        reply_markup=main_actions)
 
 
-async def start_craps(message: Message):
-    player = Player(name='Andrey')
-    comp = Player(name='Computer')
-    dice_set = DiceSet()
-    game = Game(player=player, computer=comp, dices=dice_set)
-    round_counter = 1
-    await message.answer(f"start)
+async def start_craps(message: Message, state: FSMContext):
+    await state.finish()
+    async with state.proxy() as data:
+        data['round_counter'] = 1
+    await play_round(message, state)
 
 
 def register_start(dp: Dispatcher):
