@@ -69,21 +69,11 @@ async def bots_reroll(call: CallbackQuery, state: FSMContext):
         if dices_for_bots_reroll == 'all':
             bot_mark, bot_summa, bot_result, bot_dice_list = await play_turn(call.message)
         else:
-
-    # async with state.proxy() as data:
-    #     data['bot_mark'] = bot_mark
-    #     data['bot_summa'] = bot_summa
-    #     data['bot_dice_list'] = bot_dice_list
-    # await call.message.answer(f"👤 Мой результат: <b>{bot_result} ({bot_summa})</b>", parse_mode='html')
-    #
-    # await sleep(2)
-    #
-    # states = await state.get_data()
-    # last_winner = states.get('last_winner')
-    # if last_winner == 'bot':
-    #     await call.message.answer(f'🤵 Твой бросок...', reply_markup=await do_roll())
-    # else:
-    #     await ask_reroll(call.message, state)
+            bot_mark, bot_summa, bot_result, bot_dice_list = await play_reroll(call.message, state, 'bot')
+        await save_result(bot_mark, bot_summa, bot_dice_list, save_for='bot', state=state)
+        await call.message.answer(f"👤 Мой результат: <b>{bot_result} ({bot_summa})</b>", parse_mode='html')
+    else:
+        pass
 
 
 async def get_dice_for_reroll(call: CallbackQuery, callback_data: dict, state: FSMContext):
@@ -105,7 +95,7 @@ async def reroll_done(call: CallbackQuery, callback_data: dict, state: FSMContex
         pass
     else:
         if callback_data.get('action') == 'reroll_done':
-            player_mark, player_summa, player_result, player_dice_list = await play_reroll(call.message, state)
+            player_mark, player_summa, player_result, player_dice_list = await play_reroll(call.message, state, 'player')
         else:
             player_mark, player_summa, player_result, player_dice_list = await play_turn(call.message)
         await save_result(player_mark, player_summa, player_dice_list, save_for='player', state=state)

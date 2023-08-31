@@ -77,10 +77,13 @@ async def play_turn(message: Message) -> tuple[int, int, str, list]:
     return mark, summa, result, dice_list
 
 
-async def play_reroll(message: Message, state: FSMContext) -> tuple[int, int, str, list]:
+async def play_reroll(message: Message, state: FSMContext, play_for: str) -> tuple[int, int, str, list]:
     await sleep(2)
     states = await state.get_data()
-    player_dice_list = states.get('player_dice_list')
+    if play_for == 'player':
+        player_dice_list = states.get('player_dice_list')
+    else:
+        player_dice_list = states.get('bot_dice_list')
     num = 5 - len(player_dice_list)
     dice_list = await roll_dice(num=num)
     result_dice_list = player_dice_list + dice_list
