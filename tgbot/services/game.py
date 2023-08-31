@@ -9,8 +9,20 @@ from tgbot.keyboards.inline import do_roll, bot_roll, players_reroll
 from tgbot.services.printer import print_dice
 
 
-async def roll_dice() -> list[int]:
-    return [randint(1, 6) for _ in range(5)]
+async def roll_dice(num=5) -> list[int]:
+    return [randint(1, 6) for _ in range(num)]
+
+
+async def save_result(mark: int, summa: int, dice_list: list, save_for: str, state: FSMContext) -> None:
+    async with state.proxy() as data:
+        if save_for == 'player':
+            data['player_mark'] = mark
+            data['player_summa'] = summa
+            data['player_dice_list'] = dice_list
+        else:
+            data['bot_mark'] = mark
+            data['bot_summa'] = summa
+            data['bot_dice_list'] = dice_list
 
 
 async def check_combination(dice_set: list[int]) -> tuple[int, int, str]:
@@ -63,6 +75,19 @@ async def play_turn(message: Message) -> tuple[int, int, str, list]:
     await print_dice(message, dice_list)
     await message.delete()
     return mark, summa, result, dice_list
+
+
+async def play_reroll(message: Message, state: FSMContext) -> tuple[int, int, str, list]:
+    await sleep(2)
+    states = await state.get_data()
+    player_dice_list = states.get('player_dice_list')
+    num = 5 - len(player_dice_list)
+    dice_list = await roll_dice(num=num)
+    result_dice_list = player_dice_list + dice_list
+    mark, summa, result = await check_combination(result_dice_list)
+    await print_dice(message, result_dice_list)
+    await message.delete()
+    return mark, summa, result, result_dice_list
 
 
 async def ask_reroll(message: Message, state: FSMContext):
