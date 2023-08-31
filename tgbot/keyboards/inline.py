@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from tgbot.misc.factories import for_reroll
+from tgbot.misc.factories import for_reroll, for_reroll_done
 from tgbot.services.printer import DICES
 
 
@@ -41,8 +41,7 @@ async def players_reroll(player_dice_list: list) -> InlineKeyboardMarkup:
 
     keyboard = InlineKeyboardMarkup(row_width=5, inline_keyboard=[
         [InlineKeyboardButton(text=DICES[dice], callback_data=for_reroll.new(dice_value=dice)) for dice in player_dice_list],
-        [InlineKeyboardButton(text='Не перебрасывать', callback_data='reroll_none')],
-        [InlineKeyboardButton(text='Перебросить все', callback_data='reroll_all')],
-        [InlineKeyboardButton(text='Готово!', callback_data='reroll_done')],
+        [InlineKeyboardButton(text='Перебросить все', callback_data=for_reroll_done.new(action='reroll_all'))],
+        [InlineKeyboardButton(text='Готово!', callback_data=for_reroll_done.new(action='reroll_done'))],
     ])
     return keyboard

@@ -7,10 +7,13 @@ class Game(StatesGroup):
 
     Attributes:
         round_counter (int): счетчик раундов.
+        last_winner (str): счетчик раундов.
+        round_winner (str): счетчик раундов.
     """
 
     round_counter = State()
     last_winner = State()
+    round_winner = State()
 
 
 class Players(StatesGroup):

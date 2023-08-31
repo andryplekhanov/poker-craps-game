@@ -97,6 +97,65 @@ async def ask_reroll(message: Message, state: FSMContext):
                          reply_markup=await players_reroll(player_dice_list))
 
 
+async def should_bot_reroll(message: Message, state: FSMContext) -> bool:
+    states = await state.get_data()
+    last_winner = states.get('last_winner')
+    player_mark = states.get('player_mark')
+    player_summa = states.get('player_summa')
+    bot_mark = states.get('bot_mark')
+    bot_summa = states.get('bot_summa')
+
+    if last_winner is None or last_winner == 'player':
+        if (bot_mark == player_mark) and (bot_summa > player_summa):
+            await message.answer(f'👤 Я решил не перебрасывать')
+            return False
+        elif bot_mark > player_mark:
+            await message.answer(f'👤 Я решил не перебрасывать')
+            return False
+        return True
+
+    if bot_mark >= 6:
+        await message.answer(f'👤 Я решил не перебрасывать')
+        return False
+    return True
+
+
+async def choose_dices_for_bots_reroll(message: Message, state: FSMContext) -> str:
+    states = await state.get_data()
+    bot_mark = states.get('bot_mark')
+    bot_dice_list = states.get('bot_dice_list')  # [5, 4, 5, 6, 1]
+
+    if bot_mark == 2:
+        await message.answer(f'👤 Я решил перебросить все...')
+        return 'all'
+
+    combination_dict = Counter(bot_dice_list)  # {5: 2, 6: 1, 4: 1, 1: 1}
+    dices_for_save = []
+
+    if bot_mark == 3 or bot_mark == 4:
+        for key, val in combination_dict.items():
+            if val == 2:
+                for dice in bot_dice_list:  # [5, 4, 5, 6, 1]
+                    if dice == key:
+                        dices_for_save.append(dice)
+    elif bot_mark == 5:
+        for key, val in combination_dict.items():
+            if val == 3:
+                for dice in bot_dice_list:  # [5, 4, 5, 6, 5]
+                    if dice == key:
+                        dices_for_save.append(dice)
+    elif bot_mark == 9:
+        for key, val in combination_dict.items():
+            if val == 4:
+                for dice in bot_dice_list:  # [5, 5, 5, 6, 5]
+                    if dice == key:
+                        dices_for_save.append(dice)
+
+    async with state.proxy() as data:
+        data['bot_dice_list'] = dices_for_save
+    return 'some'
+
+
 async def play_round(message: Message, state: FSMContext):
     states = await state.get_data()
     round_counter = states.get('round_counter')
