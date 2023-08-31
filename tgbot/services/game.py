@@ -5,11 +5,11 @@ from random import randint
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 
-from tgbot.keyboards.inline import do_roll, bot_roll, players_reroll
+from tgbot.keyboards.inline import do_roll, bot_roll, players_reroll, do_next
 from tgbot.services.printer import print_dice
 
 
-async def roll_dice(num=5) -> list[int]:
+async def roll_dice(num: int = 5) -> list[int]:
     return [randint(1, 6) for _ in range(num)]
 
 
@@ -73,7 +73,6 @@ async def play_turn(message: Message) -> tuple[int, int, str, list]:
     dice_list = await roll_dice()
     mark, summa, result = await check_combination(dice_list)
     await print_dice(message, dice_list)
-    await message.delete()
     return mark, summa, result, dice_list
 
 
@@ -89,18 +88,24 @@ async def play_reroll(message: Message, state: FSMContext, play_for: str) -> tup
     result_dice_list = player_dice_list + dice_list
     mark, summa, result = await check_combination(result_dice_list)
     await print_dice(message, result_dice_list)
-    await message.delete()
     return mark, summa, result, result_dice_list
 
 
 async def ask_reroll(message: Message, state: FSMContext):
     states = await state.get_data()
     player_dice_list = states.get('player_dice_list')
-    await message.answer('Выбирай, какие кубики желаешь перебросить и жми "Готово!"',
+    await message.answer('Выбирай, какие кубики желаешь перебросить и жми "Готово!"\n'
+                         'Если никакие не хочешь перебрасывать, жми сразу "Готово!"',
                          reply_markup=await players_reroll(player_dice_list))
 
 
 async def should_bot_reroll(message: Message, state: FSMContext) -> bool:
+    """
+    Функция определяет, должен ли бот перебрасывать кубики.
+    :param message: aiogram.types.Message
+    :param state: aiogram.dispatcher.FSMContext
+    :return: bool
+    """
     states = await state.get_data()
     last_winner = states.get('last_winner')
     player_mark = states.get('player_mark')
@@ -124,6 +129,14 @@ async def should_bot_reroll(message: Message, state: FSMContext) -> bool:
 
 
 async def choose_dices_for_bots_reroll(message: Message, state: FSMContext) -> str:
+    """
+    Функция, определяющая, какие кубики бот должен сохранить, а какие перебросить.
+    Перезаписывает состояние 'bot_dice_list' - кубики, которые не будут переброшены.
+    Возвращает строку.
+    :param message: aiogram.types.Message
+    :param state: aiogram.dispatcher.FSMContext
+    :return: str - 'all' - если бот решил перебросить все кубики; 'some' - если бот выбрал несколько кубиков для переброса
+    """
     states = await state.get_data()
     bot_mark = states.get('bot_mark')
     bot_dice_list = states.get('bot_dice_list')  # [5, 4, 5, 6, 1]
@@ -157,6 +170,49 @@ async def choose_dices_for_bots_reroll(message: Message, state: FSMContext) -> s
     async with state.proxy() as data:
         data['bot_dice_list'] = dices_for_save
     return 'some'
+
+
+async def reward_player(state: FSMContext) -> None:
+    states = await state.get_data()
+    score = states.get('player_score')
+    score += 1
+    async with state.proxy() as data:
+        data['player_score'] = score
+        data['last_winner'] = 'player'
+
+
+async def reward_bot(state: FSMContext) -> None:
+    states = await state.get_data()
+    score = states.get('bot_score')
+    score += 1
+    async with state.proxy() as data:
+        data['bot_score'] = score
+        data['last_winner'] = 'bot'
+
+
+async def set_winner(message: Message, state: FSMContext) -> None:
+    states = await state.get_data()
+    player_mark = states.get('player_mark')
+    player_summa = states.get('player_summa')
+    bot_mark = states.get('bot_mark')
+    bot_summa = states.get('bot_summa')
+
+    if player_mark > bot_mark:
+        await reward_player(state)
+        text = '🤵 Ты выиграл. У тебя старше комбинация.'
+    elif player_mark < bot_mark:
+        await reward_bot(state)
+        text = '👤 Я выиграл. У меня старше комбинация.'
+    else:
+        if player_summa > bot_summa:
+            await reward_player(state)
+            text = '🤵 Ты выиграл. У тебя больше сумма.'
+        elif player_summa < bot_summa:
+            await reward_bot(state)
+            text = '👤 Я выиграл. У меня больше сумма.'
+        else:
+            text = 'Ничья.'
+    await message.answer(text, reply_markup=await do_next())
 
 
 async def play_round(message: Message, state: FSMContext):

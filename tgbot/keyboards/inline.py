@@ -4,6 +4,16 @@ from tgbot.misc.factories import for_reroll, for_reroll_done
 from tgbot.services.printer import DICES
 
 
+async def do_next() -> InlineKeyboardMarkup:
+    """
+    Клавиатура с кнопкой - следующий раунд
+    """
+
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton(text='🎲 Далее 🎲', callback_data='next_round'))
+    return keyboard
+
+
 async def do_roll() -> InlineKeyboardMarkup:
     """
     Клавиатура с кнопкой - бросить кубики
