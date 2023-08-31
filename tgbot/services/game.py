@@ -6,7 +6,8 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 
 from tgbot.keyboards.inline import do_roll, bot_roll, players_reroll, do_next
-from tgbot.services.printer import print_dice
+from tgbot.keyboards.reply import main_actions
+from tgbot.services.printer import print_dice, print_emotion
 
 
 async def roll_dice(num: int = 5) -> list[int]:
@@ -188,6 +189,16 @@ async def reward_bot(state: FSMContext) -> None:
     async with state.proxy() as data:
         data['bot_score'] = score
         data['last_winner'] = 'bot'
+
+
+async def finish_game(message: Message, player_score: int, bot_score: int, state: FSMContext) -> None:
+    await state.finish()
+    await message.answer(f"🏁 Игра окончена со счётом:\n"
+                         f"🤵 Ты <b>{player_score}:{bot_score}</b> Бот 👤", reply_markup=main_actions)
+    if player_score > bot_score:
+        await print_emotion(message=message, bot_win=False)
+    else:
+        await print_emotion(message=message, bot_win=True)
 
 
 async def set_winner(message: Message, state: FSMContext) -> None:

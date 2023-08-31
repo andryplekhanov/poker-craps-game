@@ -9,7 +9,7 @@ from tgbot.keyboards.inline import bot_roll, do_roll, bot_reroll
 from tgbot.keyboards.reply import main_actions
 from tgbot.misc.factories import for_reroll, for_reroll_done
 from tgbot.services.game import play_round, play_turn, ask_reroll, play_reroll, save_result, should_bot_reroll, \
-    choose_dices_for_bots_reroll, set_winner
+    choose_dices_for_bots_reroll, set_winner, finish_game
 
 
 async def user_start(message: Message):
@@ -115,11 +115,17 @@ async def reroll_done(call: CallbackQuery, callback_data: dict, state: FSMContex
 async def next_round(call: CallbackQuery, state: FSMContext):
     await call.message.edit_reply_markup(reply_markup=None)
     states = await state.get_data()
-    round = states.get('round_counter')
-    round += 1
-    async with state.proxy() as data:
-        data['round_counter'] = round
-    await play_round(call.message, state)
+    player_score = states.get('player_score')
+    bot_score = states.get('bot_score')
+
+    if player_score == 5 or bot_score == 5:
+        await finish_game(call.message, player_score, bot_score, state)
+    else:
+        round = states.get('round_counter')
+        round += 1
+        async with state.proxy() as data:
+            data['round_counter'] = round
+        await play_round(call.message, state)
 
 
 def register_start(dp: Dispatcher):
