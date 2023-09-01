@@ -56,9 +56,10 @@ async def start_craps(call: CallbackQuery, state: FSMContext):
         data['round_counter'] = 1
         data['player_score'] = 0
         data['bot_score'] = 0
-    await call.message.answer('Начинаем новую игру', reply_markup=game_actions)
-    await sleep(2)
+    await call.message.answer('👍 Начинаем новую игру.\nИграем до 5 очков.\nПоехали!!!', reply_markup=game_actions)
+    await sleep(3)
     await play_round(call.message, state)
+    await call.message.delete()
 
 
 async def players_roll(call: CallbackQuery, state: FSMContext):
