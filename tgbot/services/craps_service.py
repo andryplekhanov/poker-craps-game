@@ -3,10 +3,11 @@ from collections import Counter
 from random import randint
 
 from aiogram.dispatcher import FSMContext
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 
-from tgbot.keyboards.inline import do_roll, bot_roll, players_reroll, do_next
-from tgbot.keyboards.reply import main_actions
+from tgbot.keyboards.inline_craps import do_roll, bot_roll, players_reroll, do_next
+from tgbot.keyboards.reply_craps import game_actions
+from tgbot.services.default_commands import get_default_commands
 from tgbot.services.printer import print_dice, print_emotion
 
 
@@ -182,7 +183,7 @@ async def choose_dices_for_bots_reroll(message: Message, state: FSMContext) -> s
                 for dice in bot_dice_list:  # [5, 4, 5, 6, 1]
                     if dice == key:
                         dices_for_save.append(dice)
-    elif bot_mark == 5:
+    elif bot_mark == 5 or bot_mark == 8:
         for key, val in combination_dict.items():
             if val == 3:
                 for dice in bot_dice_list:  # [5, 4, 5, 6, 5]
@@ -229,12 +230,15 @@ async def finish_game(message: Message, player_score: int, bot_score: int, state
     Функция показывает итоговый результат игры и в зависимости от него - эмоциональную реакцию бота.
     """
     await state.finish()
-    await message.answer(f"🏁 Игра окончена со счётом:\n"
-                         f"🤵 Ты <b>{player_score}:{bot_score}</b> Бот 👤", reply_markup=main_actions)
+    await message.answer(f"🏁 Игра окончена со счётом:\n🤵 Ты <b>{player_score}:{bot_score}</b> Бот 👤")
+    await sleep(2)
     if player_score > bot_score:
         await print_emotion(message=message, bot_win=False)
     else:
         await print_emotion(message=message, bot_win=True)
+    await sleep(3)
+    commands = await get_default_commands()
+    await message.answer(f"Я реагирую на следующие команды:\n\n{commands}", reply_markup=ReplyKeyboardRemove())
 
 
 async def set_winner(message: Message, state: FSMContext) -> None:

@@ -4,6 +4,16 @@ from tgbot.misc.factories import for_reroll, for_reroll_done
 from tgbot.services.printer import DICES
 
 
+async def craps_start_game() -> InlineKeyboardMarkup:
+    """
+    Клавиатура с кнопкой - Начало игры Craps
+    """
+
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton(text='🎲 Поехали 🎲', callback_data='craps_start_game'))
+    return keyboard
+
+
 async def do_next() -> InlineKeyboardMarkup:
     """
     Клавиатура с кнопкой - следующий раунд

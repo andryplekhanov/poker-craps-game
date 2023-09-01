@@ -7,9 +7,12 @@ from aiogram.contrib.fsm_storage.redis import RedisStorage2
 
 from tgbot.config import load_config
 from tgbot.filters.admin import AdminFilter
+from tgbot.handlers.craps import register_craps
 from tgbot.handlers.echo import register_echo
+from tgbot.handlers.help import register_help
 from tgbot.handlers.start import register_start
 from tgbot.middlewares.environment import EnvironmentMiddleware
+from tgbot.services.default_commands import set_default_commands
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +27,8 @@ def register_all_filters(dp):
 
 def register_all_handlers(dp):
     register_start(dp)
+    register_craps(dp)
+    register_help(dp)
 
     register_echo(dp)
 
@@ -45,6 +50,7 @@ async def main():
     register_all_middlewares(dp, config)
     register_all_filters(dp)
     register_all_handlers(dp)
+    await set_default_commands(bot)
 
     # start
     try:
