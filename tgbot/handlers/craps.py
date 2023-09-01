@@ -11,7 +11,7 @@ from tgbot.misc.factories import for_reroll, for_reroll_done
 from tgbot.services.craps_service import play_round, finish_game, save_result, play_reroll, play_turn, set_winner, \
     ask_reroll, choose_dices_for_bots_reroll, should_bot_reroll
 from tgbot.services.default_commands import get_default_commands
-from tgbot.services.printer import print_craps_rule, print_emotion
+from tgbot.services.printer import print_craps_rules, print_emotion
 
 
 async def craps(message: Message, state: FSMContext):
@@ -20,7 +20,7 @@ async def craps(message: Message, state: FSMContext):
     Показывает правила игры и выдает кнопку - Начать игру.
     """
     await state.finish()
-    await print_craps_rule(message)
+    await print_craps_rules(message)
     await message.answer('Сыграем?', reply_markup=await craps_start_game())
 
 
@@ -42,7 +42,7 @@ async def show_rules(message: Message):
     Хендлер, реагирующий на нажатие текстовой кнопки 'Правила игры'.
     Показывает правила игры.
     """
-    await print_craps_rule(message)
+    await print_craps_rules(message)
 
 
 async def start_craps(call: CallbackQuery, state: FSMContext):
