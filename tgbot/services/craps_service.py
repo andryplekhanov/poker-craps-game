@@ -237,7 +237,7 @@ async def finish_game(message: Message, player_score: int, bot_score: int, state
         await print_emotion(message=message, bot_win=True)
     await sleep(3)
     commands = await get_default_commands()
-    await message.answer(f"Я реагирую на следующие команды:\n\n{commands}", reply_markup=ReplyKeyboardRemove())
+    await message.answer(f"Во что сыграем?\n\n{commands}", reply_markup=ReplyKeyboardRemove())
 
 
 async def set_winner(message: Message, state: FSMContext) -> None:

@@ -94,5 +94,5 @@ async def print_gallows_letter(message: Message, state: FSMContext) -> None:
     states = await state.get_data()
     good_letters = states.get('good_letters')
     word = states.get('word')
-    text = [f' {letter}⃣ ' if letter in good_letters else ' *⃣ ' for letter in word]
+    text = [f' {letter} ' if letter in good_letters else ' * ' for letter in word]
     await message.answer(''.join(text))

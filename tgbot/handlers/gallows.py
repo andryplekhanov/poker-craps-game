@@ -9,7 +9,7 @@ from tgbot.keyboards.inline_gallows import gallows_start_game
 from tgbot.keyboards.reply import gallows_game_actions
 from tgbot.misc.states import GallowsGame
 from tgbot.services.default_commands import get_default_commands
-from tgbot.services.gallows_service import choose_word, check_letter
+from tgbot.services.gallows_service import choose_word, check_letter, check_gallows_game_status
 from tgbot.services.printer import print_gallows_rules, print_emotion, print_gallows_letter
 
 
@@ -57,6 +57,7 @@ async def get_letter(message: Message, state: FSMContext):
         await message.answer('Вам нужно ввести 1 букву')
     else:
         await check_letter(message, state, letter)
+    await check_gallows_game_status(message, state)
 
 
 async def give_up_gallows(message: Message, state: FSMContext):
