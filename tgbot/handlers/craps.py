@@ -6,7 +6,7 @@ from aiogram.dispatcher.filters import Text
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from tgbot.keyboards.inline_craps import bot_roll, do_roll, bot_reroll, craps_start_game
-from tgbot.keyboards.reply_craps import game_actions
+from tgbot.keyboards.reply import craps_game_actions
 from tgbot.misc.factories import for_reroll, for_reroll_done
 from tgbot.services.craps_service import play_round, finish_game, save_result, play_reroll, play_turn, set_winner, \
     ask_reroll, choose_dices_for_bots_reroll, should_bot_reroll
@@ -56,7 +56,7 @@ async def start_craps(call: CallbackQuery, state: FSMContext):
         data['round_counter'] = 1
         data['player_score'] = 0
         data['bot_score'] = 0
-    await call.message.answer('👍 Начинаем новую игру.\nИграем до 5 очков.\nПоехали!!!', reply_markup=game_actions)
+    await call.message.answer('👍 Начинаем новую игру.\nИграем до 5 очков.\nПоехали!!!', reply_markup=craps_game_actions)
     await sleep(3)
     await play_round(call.message, state)
     await call.message.delete()
@@ -200,8 +200,8 @@ async def next_round(call: CallbackQuery, state: FSMContext):
 
 def register_craps(dp: Dispatcher):
     dp.register_message_handler(craps, commands=["craps"], state="*")
-    dp.register_message_handler(give_up, Text(contains='Сдаться и остановить игру'))
-    dp.register_message_handler(show_rules, Text(contains='Правила игры'))
+    dp.register_message_handler(give_up, Text(equals='⛔️ Сдаться и остановить игру ⛔️'))
+    dp.register_message_handler(show_rules, Text(equals='🔎 Правила игры 🔎'))
     dp.register_callback_query_handler(start_craps, text='craps_start_game', state="*")
     dp.register_callback_query_handler(players_roll, text='do_roll', state="*")
     dp.register_callback_query_handler(reroll_done, for_reroll_done.filter(), state="*")

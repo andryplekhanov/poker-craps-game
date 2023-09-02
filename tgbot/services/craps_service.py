@@ -6,7 +6,6 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
 from tgbot.keyboards.inline_craps import do_roll, bot_roll, players_reroll, do_next
-from tgbot.keyboards.reply_craps import game_actions
 from tgbot.services.default_commands import get_default_commands
 from tgbot.services.printer import print_dice, print_emotion
 
