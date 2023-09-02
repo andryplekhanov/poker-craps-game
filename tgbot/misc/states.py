@@ -1,7 +1,7 @@
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
 
-class Game(StatesGroup):
+class CrapsGame(StatesGroup):
     """
     Класс реализует состояние игры.
 
@@ -14,7 +14,7 @@ class Game(StatesGroup):
     last_winner = State()
 
 
-class Players(StatesGroup):
+class CrapsPlayers(StatesGroup):
     """
     Класс реализует состояние игроков внутри игры.
 
@@ -38,3 +38,22 @@ class Players(StatesGroup):
     bot_dice_list = State()
     bot_mark = State()
     bot_summa = State()
+
+
+class GallowsGame(StatesGroup):
+    """
+    Класс реализует состояние игры Виселица.
+
+    Attributes:
+        good_letters (list): счетчик раундов.
+        bad_letters (list): победитель прошлого раунда.
+        errors (int): победитель прошлого раунда.
+        word (list): победитель прошлого раунда.
+        wait_letter (str): победитель прошлого раунда.
+    """
+
+    good_letters = State()
+    bad_letters = State()
+    errors = State()
+    word = State()
+    wait_letter = State()

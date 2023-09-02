@@ -82,3 +82,8 @@ async def print_craps_rules(message: Message) -> None:
             '• Если комбинации и суммы кубиков совпали, в раунде объявляется ничья.'
             )
     await message.answer(text, parse_mode='html')
+
+
+async def print_gallows_rules(message: Message) -> None:
+    text = ('<b>Правила игры в "Виселицу":</b>')
+    await message.answer(text, parse_mode='html')
