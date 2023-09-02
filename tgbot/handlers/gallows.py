@@ -9,8 +9,8 @@ from tgbot.keyboards.inline_gallows import gallows_start_game
 from tgbot.keyboards.reply import gallows_game_actions
 from tgbot.misc.states import GallowsGame
 from tgbot.services.default_commands import get_default_commands
-from tgbot.services.gallows_service import choose_word
-from tgbot.services.printer import print_gallows_rules, print_emotion
+from tgbot.services.gallows_service import choose_word, check_letter
+from tgbot.services.printer import print_gallows_rules, print_emotion, print_gallows_letter
 
 
 async def gallows(message: Message, state: FSMContext):
@@ -26,8 +26,9 @@ async def gallows(message: Message, state: FSMContext):
 async def start_gallows(call: CallbackQuery, state: FSMContext):
     """
     Хендлер, начинающий игру. Реагирует на нажатие инлайн-кнопки gallows_start_game.
-    Записывает состояние игры round_counter и состояния игроков player_score и bot_score,
-    затем вызывает функцию play_round для начала 1го раунда.
+    Вызывает функцию choose_word и получает слово.
+    Записывает состояния игры good_letters, bad_letters, errors и word,
+    затем вызывает состояние wait_letter и ожидает ввод буквы.
     """
     await call.message.edit_reply_markup(reply_markup=None)
     word = await choose_word()
@@ -41,7 +42,7 @@ async def start_gallows(call: CallbackQuery, state: FSMContext):
     await call.message.answer(f"👍 Начинаем новую игру.\n"
                               f"Я загадал слово из {len(word)} букв. Отгадай его за 7 попыток.\n"
                               "Поехали!!!\nВведи букву...", reply_markup=gallows_game_actions)
-    await call.message.answer(f'*⃣' * len(word))
+    await print_gallows_letter(call.message, state)
     await GallowsGame.wait_letter.set()
     await call.message.delete()
 
@@ -55,7 +56,7 @@ async def get_letter(message: Message, state: FSMContext):
     if not letter.isalpha() or not len(letter) == 1:
         await message.answer('Вам нужно ввести 1 букву')
     else:
-        await message.answer(f'{letter}')
+        await check_letter(message, state, letter)
 
 
 async def give_up_gallows(message: Message, state: FSMContext):
