@@ -15,7 +15,7 @@ async def choose_word() -> str:
     :return (str): случайное слово
     """
     path = os.path.abspath(os.path.join('tgbot', 'files', 'words.txt'))
-    with open(path, 'r') as file:
+    with open(path, 'r', encoding='utf8') as file:
         content = file.readlines()
         return choice(content)
 
@@ -77,6 +77,8 @@ async def check_gallows_game_status(message: Message, state: FSMContext) -> None
         await finish_gallows_game(message, state, 'bot')
     elif await is_word_guessed(good_letters, word):
         await finish_gallows_game(message, state, 'player')
+    else:
+        await message.answer('Введи букву...')
 
 
 async def finish_gallows_game(message: Message, state: FSMContext, winner: str) -> None:
