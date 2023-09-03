@@ -3,9 +3,9 @@ from aiogram.types import BotCommand, BotCommandScopeDefault
 
 DEFAULT_COMMANDS = (
     ('start', "🟢 Запустить бота"),
-    ('craps', "🎲 Играть в Craps - покер в кости 🎲"),
-    ('gallows', "🧟‍♂ Играть в Виселицу 🩸"),
-    ('blackjack', "♠️♥️️ Играть в Blackjack - 21 очко ♦️♣"),
+    ('craps', "Играть в Craps - покер в кости 🎲"),
+    ('gallows', "Играть в Виселицу 🩸"),
+    ('blackjack', "️Играть в Blackjack - 21 очко ♦️♣️♥️️♠️"),
     ('help', "💡 Вывести справку"),
 )
 

@@ -1,6 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
-# Клавиатура для выбора действия
 craps_game_actions = ReplyKeyboardMarkup(
     resize_keyboard=True,
     keyboard=[

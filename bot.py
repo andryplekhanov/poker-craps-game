@@ -9,6 +9,7 @@ from tgbot.config import load_config
 from tgbot.filters.admin import AdminFilter
 from tgbot.handlers.craps import register_craps
 from tgbot.handlers.echo import register_echo
+from tgbot.handlers.gallows import register_gallows
 from tgbot.handlers.help import register_help
 from tgbot.handlers.start import register_start
 from tgbot.middlewares.environment import EnvironmentMiddleware
@@ -28,6 +29,7 @@ def register_all_filters(dp):
 def register_all_handlers(dp):
     register_start(dp)
     register_craps(dp)
+    register_gallows(dp)
     register_help(dp)
 
     register_echo(dp)
