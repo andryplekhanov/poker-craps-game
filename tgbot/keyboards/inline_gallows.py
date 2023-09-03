@@ -7,5 +7,5 @@ async def gallows_start_game() -> InlineKeyboardMarkup:
     """
 
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(text='🎲 Поехали 🎲', callback_data='gallows_start_game'))
+    keyboard.add(InlineKeyboardButton(text='💀 Играем 💀', callback_data='gallows_start_game'))
     return keyboard

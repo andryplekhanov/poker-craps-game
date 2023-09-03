@@ -6,7 +6,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
 from tgbot.services.default_commands import get_default_commands
-from tgbot.services.printer import print_gallows_letter, print_emotion
+from tgbot.services.printer import print_gallows_letter, print_emotion, print_gallows, print_correct_word
 
 
 async def choose_word() -> str:
@@ -33,7 +33,15 @@ async def get_current_states(state: FSMContext) -> tuple[list, list, list, int]:
     return good_letters, bad_letters, word, errors
 
 
-async def check_letter(message: Message, state: FSMContext, letter: str):
+async def check_letter(message: Message, state: FSMContext, letter: str) -> None:
+    """
+    Функция проверяет введенную букву.
+    Если буква называлась ранее, просит ввести другую.
+    Если буква есть в загаданном слове и она не называлась ранее, помещает её в список отгаданных букв.
+    Иначе увеличивает счетчик ошибок, помещает букву в список ошибочных букв и вызывает функцию печати виселицы.
+    В конце печатает загаданное слово, скрывая неотгаданные буквы.
+
+    """
     good_letters, bad_letters, word, errors = await get_current_states(state)
 
     if letter in good_letters or letter in bad_letters:
@@ -48,28 +56,43 @@ async def check_letter(message: Message, state: FSMContext, letter: str):
         async with state.proxy() as data:
             data['bad_letters'] = bad_letters
             data['errors'] = errors
+        await print_gallows(message, errors)
     await print_gallows_letter(message, state)
 
 
-async def is_word_guessed(good_letters, word):
+async def is_word_guessed(good_letters, word) -> bool:
+    """
+    Функция проверяет: отгадано ли слово.
+    """
     return all([letter in good_letters for letter in word])
 
 
-async def check_gallows_game_status(message: Message, state: FSMContext):
-    await message.answer('Виселица')
+async def check_gallows_game_status(message: Message, state: FSMContext) -> None:
+    """
+    Функция проверяет состояние игры. Если счетчик ошибок == 8, завершает игру победой бота.
+    Если слово отгадано, завершает игру победой игрока.
+    """
     good_letters, bad_letters, word, errors = await get_current_states(state)
-    if errors == 7:
+    if errors == 8:
         await finish_gallows_game(message, state, 'bot')
     elif await is_word_guessed(good_letters, word):
         await finish_gallows_game(message, state, 'player')
 
 
-async def finish_gallows_game(message: Message, state: FSMContext, winner: str):
-    await sleep(3)
+async def finish_gallows_game(message: Message, state: FSMContext, winner: str) -> None:
+    """
+    Функция завершает игру.
+    Если победил бот, печатает загаданное слово. Если победил игрок - печатает поздравление.
+    В зависимости от победителя, печатает эмоциональную реакцию бота.
+    Сбрасывает все состояния и печатает список команд.
+    """
     if winner == 'bot':
+        await print_correct_word(message, state)
         await print_emotion(message=message, bot_win=True)
     else:
+        await message.answer('😎 Вы отгадали слово! Это победа! 🎉🎉🎉')
         await print_emotion(message=message, bot_win=False)
     await state.finish()
     commands = await get_default_commands()
+    await sleep(3)
     await message.answer(f"Во что сыграем?\n\n{commands}", reply_markup=ReplyKeyboardRemove())

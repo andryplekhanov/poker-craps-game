@@ -1,16 +1,13 @@
-from asyncio import sleep
-
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
+from aiogram.types import Message, CallbackQuery
 
 from tgbot.keyboards.inline_gallows import gallows_start_game
 from tgbot.keyboards.reply import gallows_game_actions
 from tgbot.misc.states import GallowsGame
-from tgbot.services.default_commands import get_default_commands
-from tgbot.services.gallows_service import choose_word, check_letter, check_gallows_game_status
-from tgbot.services.printer import print_gallows_rules, print_emotion, print_gallows_letter
+from tgbot.services.gallows_service import choose_word, check_letter, check_gallows_game_status, finish_gallows_game
+from tgbot.services.printer import print_gallows_rules, print_gallows_letter
 
 
 async def gallows(message: Message, state: FSMContext):
@@ -20,7 +17,8 @@ async def gallows(message: Message, state: FSMContext):
     """
     await state.finish()
     await print_gallows_rules(message)
-    await message.answer('Сыграем?', reply_markup=await gallows_start_game())
+    await message.answer('Ну что, проверим твои знания русского языка? Или ты забздел?',
+                         reply_markup=await gallows_start_game())
 
 
 async def start_gallows(call: CallbackQuery, state: FSMContext):
@@ -33,14 +31,13 @@ async def start_gallows(call: CallbackQuery, state: FSMContext):
     await call.message.edit_reply_markup(reply_markup=None)
     word = await choose_word()
     word = word.rstrip('\n')
-    print(word)
     async with state.proxy() as data:
         data['good_letters'] = list()
         data['bad_letters'] = list()
         data['errors'] = 0
         data['word'] = list(word)
     await call.message.answer(f"👍 Начинаем новую игру.\n"
-                              f"Я загадал слово из {len(word)} букв. Отгадай его за 7 попыток.\n"
+                              f"Я загадал слово из {len(word)} букв. Отгадай его.\n"
                               "Поехали!!!\nВведи букву...", reply_markup=gallows_game_actions)
     await print_gallows_letter(call.message, state)
     await GallowsGame.wait_letter.set()
@@ -49,7 +46,9 @@ async def start_gallows(call: CallbackQuery, state: FSMContext):
 
 async def get_letter(message: Message, state: FSMContext):
     """
-    Хендлер,
+    Хендлер, ожидающий ввод буквы. Если введенный символ - не буква, просит ввести букву.
+    Если введенный символ - буква, вызывает функцию проверки буквы check_letter.
+    В конце проверяет состояние игры функцией check_gallows_game_status.
     """
 
     letter = message.text
@@ -63,17 +62,9 @@ async def get_letter(message: Message, state: FSMContext):
 async def give_up_gallows(message: Message, state: FSMContext):
     """
     Хендлер, реагирующий на нажатие текстовой кнопки 'Сдаться и остановить игру'.
-    Сбрасывает все состояния. Показывает эмоциональную реакцию бота на победу.
-    Показывает меню с командами.
+    Вызывает функцию завершения игры finish_gallows_game с победой бота.
     """
-    states = await state.get_data()
-    word = ''.join(states.get('word'))
-    await message.answer(f'Я загадал слово <b>"{word}"</b>', parse_mode='html')
-    await state.finish()
-    await print_emotion(message=message, bot_win=True)
-    await sleep(3)
-    commands = await get_default_commands()
-    await message.answer(f"Выбирай игру:\n\n{commands}", reply_markup=ReplyKeyboardRemove())
+    await finish_gallows_game(message, state, 'bot')
 
 
 async def show_rules_gallows(message: Message):

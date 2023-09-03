@@ -45,11 +45,11 @@ class GallowsGame(StatesGroup):
     Класс реализует состояние игры Виселица.
 
     Attributes:
-        good_letters (list): счетчик раундов.
-        bad_letters (list): победитель прошлого раунда.
-        errors (int): победитель прошлого раунда.
-        word (list): победитель прошлого раунда.
-        wait_letter (str): победитель прошлого раунда.
+        good_letters (list): список угаданных букв.
+        bad_letters (list): список ошибочных букв.
+        errors (int): счетчик ошибок.
+        word (list): загаданное слово в виде списка букв.
+        wait_letter (str): состояние, ожидающее ввод буквы.
     """
 
     good_letters = State()
