@@ -56,6 +56,10 @@ UNHAPPY_EMOTIONS = [
     '👤 Радуйся, ты победил! Но я всё равно круче! Сразимся ещё раз?',
 ]
 
+SUITS = ['♠️', '♥️', '♣️', '♦️']
+
+VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+
 
 async def print_dice(message: Message, dices: list[int]) -> None:
     result = ''.join([DICES[dice] for dice in dices])
@@ -121,3 +125,8 @@ async def print_correct_word(message: Message, state: FSMContext) -> None:
     states = await state.get_data()
     word = ''.join(states.get('word'))
     await message.answer(f'Я загадал слово <b>"{word}"</b>', parse_mode='html')
+
+
+async def print_blackjack_rules(message: Message) -> None:
+    text = ('<b>Правила игры в "Blackjack":</b>\n\n')
+    await message.answer(text, parse_mode='html')

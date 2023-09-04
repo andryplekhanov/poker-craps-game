@@ -57,3 +57,16 @@ class GallowsGame(StatesGroup):
     errors = State()
     word = State()
     wait_letter = State()
+
+
+class BlackjackGame(StatesGroup):
+    """
+    Класс реализует состояние игры Blackjack.
+
+    Attributes:
+        deck (list): колода карт.
+
+    """
+
+    deck = State()
+
