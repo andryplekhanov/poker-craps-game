@@ -65,8 +65,19 @@ class BlackjackGame(StatesGroup):
 
     Attributes:
         deck (list): колода карт.
-
     """
 
     deck = State()
 
+
+class BlackjackPlayers(StatesGroup):
+    """
+    Класс реализует состояние игроков внутри игры.
+
+    Attributes:
+        player_cards (list): карты игрока
+        bot_cards (list): карты бота
+    """
+
+    player_cards = State()
+    bot_cards = State()

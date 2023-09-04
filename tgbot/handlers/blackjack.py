@@ -1,11 +1,13 @@
+from asyncio import sleep
+
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.types import Message, CallbackQuery
 
-from tgbot.keyboards.inline_blackjack import blackjack_start_game
+from tgbot.keyboards.inline_blackjack import blackjack_start_game, blackjack_action_choice
 from tgbot.keyboards.reply import blackjack_game_actions
-from tgbot.services.blackjack_service import create_deck
+from tgbot.services.blackjack_service import create_deck, play_blackjack_round, play_blackjack_turn
 from tgbot.services.printer import print_blackjack_rules
 
 
@@ -21,7 +23,7 @@ async def blackjack(message: Message, state: FSMContext):
 
 async def start_blackjack(call: CallbackQuery, state: FSMContext):
     """
-    Хендлер, начинающий игру. Реагирует на нажатие инлайн-кнопки gallows_start_game.
+    Хендлер, начинающий игру. Реагирует на нажатие инлайн-кнопки blackjack_start_game.
     Вызывает функцию choose_word и получает слово.
     Записывает состояния игры good_letters, bad_letters, errors и word,
     затем вызывает состояние wait_letter и ожидает ввод буквы.
@@ -30,9 +32,29 @@ async def start_blackjack(call: CallbackQuery, state: FSMContext):
     deck = await create_deck()
     async with state.proxy() as data:
         data['deck'] = deck
-
-    await call.message.answer(f"👍 Начинаем новую игру.\n", reply_markup=blackjack_game_actions)
+        data['round_counter'] = 1
+        data['player_score'] = 0
+        data['bot_score'] = 0
+        data['player_cards'] = []
+        data['bot_cards'] = []
+    await call.message.answer(f"👍 Начинаем новую игру.\nИграем до 5 очков. Поехали!",
+                              reply_markup=blackjack_game_actions)
+    await sleep(3)
+    await play_blackjack_round(call.message, state)
     await call.message.delete()
+
+
+async def player_takes_card(call: CallbackQuery, state: FSMContext):
+    """
+    Хендлер, реагирующий на нажатие инлайн-кнопки 'do_roll' - осуществляет бросок кубиков за игрока.
+    Вызывает управляющую функцию play_turn, получает результат и сохраняет его с помощью функции save_result.
+    Далее проверяет, чей сейчас ход и предлагает боту либо совершить свой бросок,
+    либо (если бот уже бросал) перебросить кубики.
+    """
+    await call.message.edit_reply_markup(reply_markup=None)
+    await play_blackjack_turn(call.message, state)
+    await call.message.answer(f"Берёшь еще?", reply_markup=await blackjack_action_choice())
+
 
 
 # async def give_up_blackjack(message: Message, state: FSMContext):
@@ -56,3 +78,4 @@ def register_blackjack(dp: Dispatcher):
     dp.register_callback_query_handler(start_blackjack, text='blackjack_start_game', state="*")
     # dp.register_message_handler(give_up_blackjack, Text(equals='⛔️ Сдаюсь ⛔️'), state="*")
     dp.register_message_handler(show_rules_blackjack, Text(equals='🔎 Подсмотреть правила 🔎'), state="*")
+    dp.register_callback_query_handler(player_takes_card, text='take_card', state="*")

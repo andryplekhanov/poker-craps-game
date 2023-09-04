@@ -9,3 +9,25 @@ async def blackjack_start_game() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton(text='♣️ Играем ♠️', callback_data='blackjack_start_game'))
     return keyboard
+
+
+async def take_card() -> InlineKeyboardMarkup:
+    """
+    Клавиатура с кнопкой - Взять карту
+    """
+
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton(text='Взять карту', callback_data='take_card'))
+    return keyboard
+
+
+async def blackjack_action_choice() -> InlineKeyboardMarkup:
+    """
+    Клавиатура с кнопками - "Взять ещё карту" и "Хватит"
+    """
+
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton(text='Ещё...', callback_data='take_card'))
+    keyboard.add(InlineKeyboardButton(text='Хватит', callback_data='enough_card'))
+    return keyboard
+
