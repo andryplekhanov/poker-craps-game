@@ -5,10 +5,11 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.types import Message, CallbackQuery
 
-from tgbot.keyboards.inline_blackjack import blackjack_start_game, blackjack_action_choice
+from tgbot.keyboards.inline_blackjack import blackjack_start_game, blackjack_action_choice, take_card, bot_takes_card
 from tgbot.keyboards.reply import blackjack_game_actions
-from tgbot.services.blackjack_service import create_deck, play_blackjack_round, play_blackjack_turn
-from tgbot.services.printer import print_blackjack_rules
+from tgbot.services.blackjack_service import create_deck, play_blackjack_round, play_blackjack_turn, \
+    play_blackjack_bot_turn
+from tgbot.services.printer import print_blackjack_rules, print_cards
 
 
 async def blackjack(message: Message, state: FSMContext):
@@ -54,8 +55,24 @@ async def player_takes_card(call: CallbackQuery, state: FSMContext):
     await call.message.edit_reply_markup(reply_markup=None)
     await play_blackjack_turn(call.message, state)
     await call.message.answer(f"Берёшь еще?", reply_markup=await blackjack_action_choice())
+    await call.message.delete()
 
 
+async def player_enough_card(call: CallbackQuery, state: FSMContext):
+    await call.message.edit_reply_markup(reply_markup=None)
+    states = await state.get_data()
+    last_winner = states.get('last_winner')
+    if last_winner is None or last_winner == 'player':
+        await call.message.answer(f'👤 Мой ход...', reply_markup=await bot_takes_card())
+    else:
+        pass
+    await call.message.delete()
+
+
+async def bot_take_card(call: CallbackQuery, state: FSMContext):
+    await call.message.edit_reply_markup(reply_markup=None)
+    await play_blackjack_bot_turn(call.message, state)
+    await print_cards(call.message, state, print_for='bot')
 
 # async def give_up_blackjack(message: Message, state: FSMContext):
 #     """
@@ -79,3 +96,5 @@ def register_blackjack(dp: Dispatcher):
     # dp.register_message_handler(give_up_blackjack, Text(equals='⛔️ Сдаюсь ⛔️'), state="*")
     dp.register_message_handler(show_rules_blackjack, Text(equals='🔎 Подсмотреть правила 🔎'), state="*")
     dp.register_callback_query_handler(player_takes_card, text='take_card', state="*")
+    dp.register_callback_query_handler(player_enough_card, text='enough_card', state="*")
+    dp.register_callback_query_handler(bot_take_card, text='bot_takes_card', state="*")

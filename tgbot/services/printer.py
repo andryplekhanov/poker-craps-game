@@ -136,5 +136,5 @@ async def print_blackjack_rules(message: Message) -> None:
 async def print_cards(message: Message, state: FSMContext, print_for: str) -> None:
     states = await state.get_data()
     cards = states.get('player_cards') if print_for == 'player' else states.get('bot_cards')
-    result = ', '.join(cards)
+    result = ', '.join(cards) if print_for == 'player' else '🀄' * len(cards)
     await message.answer(result)

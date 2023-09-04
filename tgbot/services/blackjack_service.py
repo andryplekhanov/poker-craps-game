@@ -5,7 +5,7 @@ from typing import Union
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
 
-from tgbot.keyboards.inline_blackjack import take_card
+from tgbot.keyboards.inline_blackjack import take_card, bot_takes_card
 from tgbot.services.printer import SUITS, VALUES, print_cards
 
 
@@ -47,6 +47,20 @@ async def save_card(state: FSMContext, card, save_for: str) -> None:
             data['bot_cards'] = cards
 
 
+# async def get_cards_points(cards, player):
+#     result = 0
+#     was_ace = False
+#     for card in cards:
+#         if card.card[1] == 'A' and not was_ace:
+#             was_ace = True
+#             result += 11
+#         elif card.card[1] == 'A' and (player.score >= 20 or was_ace):
+#             result += 1
+#         else:
+#             result += deck.VALUES[card.card[1:]]
+#     return result
+
+
 async def play_blackjack_turn(message: Message, state: FSMContext) -> None:
     """
     Управляющая функция. Вызывает функцию броска кубиков roll_dice.
@@ -63,6 +77,29 @@ async def play_blackjack_turn(message: Message, state: FSMContext) -> None:
     # return mark, summa, result, dice_list
 
 
+async def bot_need_more(state: FSMContext) -> bool:
+    states = await state.get_data()
+    cards = states.get('bot_cards')
+    return len(cards) != 5
+
+
+async def play_blackjack_bot_turn(message: Message, state: FSMContext) -> None:
+    """
+    Управляющая функция. Вызывает функцию броска кубиков roll_dice.
+    Вызывает функцию проверки комбинации check_combination. Вызывает функцию печати кубиков print_dice.
+    :return: кортеж: (mark: оценка, summa: сумма, result: название выпавшей комбинации, dice_list: список кубиков)
+    """
+    await sleep(1)
+    card = await pick_card(state)
+    if card:
+        await save_card(state, card, save_for='bot')
+    if await bot_need_more(state):
+        await play_blackjack_bot_turn(message, state)
+    else:
+        await message.answer('👤 Мне достаточно')
+
+
+
 async def play_blackjack_round(message: Message, state: FSMContext) -> None:
     """
     Функция начинает новый раунд. Показывает сообщение с текущим счетом.
@@ -75,5 +112,5 @@ async def play_blackjack_round(message: Message, state: FSMContext) -> None:
 
     if last_winner is None or last_winner == 'player':
         await message.answer(f'🤵 Твой ход...', reply_markup=await take_card())
-    # else:
-    #     await message.answer(f'👤 Мой ход...', reply_markup=await bot_takes_card())
+    else:
+        await message.answer(f'👤 Мой ход...', reply_markup=await bot_takes_card())

@@ -21,6 +21,16 @@ async def take_card() -> InlineKeyboardMarkup:
     return keyboard
 
 
+async def bot_takes_card() -> InlineKeyboardMarkup:
+    """
+    Клавиатура с кнопкой - Бот берёт карты
+    """
+
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton(text='Ок', callback_data='bot_takes_card'))
+    return keyboard
+
+
 async def blackjack_action_choice() -> InlineKeyboardMarkup:
     """
     Клавиатура с кнопками - "Взять ещё карту" и "Хватит"
