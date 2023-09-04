@@ -6,6 +6,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
 from tgbot.keyboards.inline_craps import do_roll, bot_roll, players_reroll, do_next
+from tgbot.services.blackjack_service import get_game_data
 from tgbot.services.default_commands import get_default_commands
 from tgbot.services.printer import print_dice, print_emotion
 
@@ -274,11 +275,7 @@ async def play_round(message: Message, state: FSMContext) -> None:
     Функция начинает новый раунд. Показывает сообщение с текущим счетом.
     В зависимости от того, кто победил в прошлом раунде - тому предлагает сделать бросок нажатием на инлайн-кнопку.
     """
-    states = await state.get_data()
-    round_counter = states.get('round_counter')
-    last_winner = states.get('last_winner')
-    player_score = states.get('player_score')
-    bot_score = states.get('bot_score')
+    round_counter, last_winner, player_score, bot_score = await get_game_data(state)
     await message.answer(f'🔔 РАУНД #{round_counter}\n'
                          f'Ты <b>{player_score}:{bot_score}</b> Я',
                          parse_mode='html')
