@@ -11,6 +11,16 @@ async def blackjack_start_game() -> InlineKeyboardMarkup:
     return keyboard
 
 
+async def blackjack_next_round() -> InlineKeyboardMarkup:
+    """
+    Клавиатура с кнопкой - Начало игры Blackjack
+    """
+
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton(text='♣️ Далее ... ♠️', callback_data='blackjack_next_round'))
+    return keyboard
+
+
 async def take_card() -> InlineKeyboardMarkup:
     """
     Клавиатура с кнопкой - Взять карту

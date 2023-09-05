@@ -6,7 +6,6 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
 from tgbot.keyboards.inline_craps import do_roll, bot_roll, players_reroll, do_next
-from tgbot.services.blackjack_service import get_game_data
 from tgbot.services.default_commands import get_default_commands
 from tgbot.services.printer import print_dice, print_emotion
 
@@ -268,6 +267,20 @@ async def set_winner(message: Message, state: FSMContext) -> None:
         else:
             text = 'Ничья.'
     await message.answer(text, reply_markup=await do_next())
+
+
+async def get_game_data(state: FSMContext) -> tuple[int, str, int, int]:
+    """
+    Функция обращается к машине состояний и берет необходимые данные:
+    round_counter, last_winner, player_score, bot_score
+    :return: round_counter, last_winner, player_score, bot_score
+    """
+    states = await state.get_data()
+    round_counter = states.get('round_counter')
+    last_winner = states.get('last_winner')
+    player_score = states.get('player_score')
+    bot_score = states.get('bot_score')
+    return round_counter, last_winner, player_score, bot_score
 
 
 async def play_round(message: Message, state: FSMContext) -> None:
