@@ -74,6 +74,13 @@ async def bot_take_card(call: CallbackQuery, state: FSMContext):
     await play_blackjack_bot_turn(call.message, state)
     await print_cards(call.message, state, print_for='bot')
 
+    states = await state.get_data()
+    last_winner = states.get('last_winner')
+    if last_winner is None or last_winner == 'player':
+        pass
+    else:
+        await call.message.answer(f'🤵 Твой ход...', reply_markup=await take_card())
+
 # async def give_up_blackjack(message: Message, state: FSMContext):
 #     """
 #     Хендлер, реагирующий на нажатие текстовой кнопки 'Сдаться и остановить игру'.

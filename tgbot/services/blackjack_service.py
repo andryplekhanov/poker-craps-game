@@ -47,18 +47,30 @@ async def save_card(state: FSMContext, card, save_for: str) -> None:
             data['bot_cards'] = cards
 
 
-# async def get_cards_points(cards, player):
-#     result = 0
-#     was_ace = False
-#     for card in cards:
-#         if card.card[1] == 'A' and not was_ace:
-#             was_ace = True
-#             result += 11
-#         elif card.card[1] == 'A' and (player.score >= 20 or was_ace):
-#             result += 1
-#         else:
-#             result += deck.VALUES[card.card[1:]]
-#     return result
+async def get_cards_points(cards: list) -> int:
+    result = 0
+    was_ace = False
+    for card in cards:
+        if card[0] == 'A' and not was_ace:
+            was_ace = True
+            if result <= 10:
+                result += 11
+            else:
+                result += 1
+        elif card[0] == 'A' and was_ace and result > 21:
+            result -= 11
+            result += 2
+        elif card[0] == 'A' and (result >= 20 or was_ace):
+            result += 1
+        elif card[0] in ['J', 'Q', 'K'] or card[1] == '0':
+            result += 10
+        else:
+            result += int(card[0])
+    if was_ace and result > 21:
+        result -= 11
+        result += 1
+    print(result)
+    return result
 
 
 async def play_blackjack_turn(message: Message, state: FSMContext) -> None:
@@ -80,7 +92,9 @@ async def play_blackjack_turn(message: Message, state: FSMContext) -> None:
 async def bot_need_more(state: FSMContext) -> bool:
     states = await state.get_data()
     cards = states.get('bot_cards')
-    return len(cards) != 5
+    print(cards)
+    cards_points = await get_cards_points(cards)
+    return cards_points < 17
 
 
 async def play_blackjack_bot_turn(message: Message, state: FSMContext) -> None:
@@ -97,7 +111,6 @@ async def play_blackjack_bot_turn(message: Message, state: FSMContext) -> None:
         await play_blackjack_bot_turn(message, state)
     else:
         await message.answer('👤 Мне достаточно')
-
 
 
 async def play_blackjack_round(message: Message, state: FSMContext) -> None:
