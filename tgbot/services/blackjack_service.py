@@ -12,10 +12,18 @@ from tgbot.services.printer import SUITS, VALUES, print_cards, print_emotion
 
 
 async def create_deck() -> list[str]:
+    """
+    Функция создаёт новую колоду карт. Возвращает список строк в формате ['A♣️', '7♦️', 'Q♠️'...]
+    """
     return [f'{val}{suit}' for suit in SUITS for val in VALUES]
 
 
-async def pick_card(state: FSMContext) -> Union[tuple[str, str], None]:
+async def pick_card(state: FSMContext) -> Union[str, None]:
+    """
+    Функция случайным образом выбирает из колоды карту и возвращает её в виде строки в формате 'A♣️'.
+    Карта из колоды удаляется.
+    Если колода пуста, возвращает None.
+    """
     states = await state.get_data()
     cards = states.get('deck')
     try:
@@ -42,7 +50,10 @@ async def get_game_data(state: FSMContext) -> tuple[int, str, int, int]:
     return round_counter, last_winner, player_score, bot_score
 
 
-async def save_card(state: FSMContext, card, save_for: str) -> None:
+async def save_card(state: FSMContext, card: str, save_for: str) -> None:
+    """
+    Функция добавляет карту к набору игрока или бота в машине состояний.
+    """
     states = await state.get_data()
     cards = states.get('player_cards') if save_for == 'player' else states.get('bot_cards')
     cards.append(card)
@@ -55,6 +66,9 @@ async def save_card(state: FSMContext, card, save_for: str) -> None:
 
 
 async def get_cards_points(cards: list) -> int:
+    """
+    Функция подсчитывает и возвращает очки в наборе карт.
+    """
     result = 0
     ace_counter = 0
     for card in cards:
@@ -91,27 +105,12 @@ async def get_cards_points(cards: list) -> int:
                 result += ace_counter
     return result
 
-# print(get_cards_points(['A♣️', '8♣️']) == 19)
-# print(get_cards_points(['10♣️', '8♣️']) == 18)
-# print(get_cards_points(['10♣️', 'K♣️']) == 20)
-# print(get_cards_points(['J♣️', 'K♣️']) == 20)
-# print(get_cards_points(['10♣️', 'A♣️']) == 21)
-# print(get_cards_points(['10♣️', 'A♣️', 'A♣️']) == 12)
-# print(get_cards_points(['10♣️', '3♣️', 'A♣️', '3♣️']) == 17)
-# print(get_cards_points(['10♣️', 'A♣️', 'A♣️', 'A♣️']) == 13)
-# print(get_cards_points(['10♣️', 'A♣️', 'A♣️', 'A♣️', 'A♣️']) == 14)
-# print(get_cards_points(['A♣️', 'A♣️', 'A♣️', 'A♣️']) == 14)
-# print(get_cards_points(['A♣️', '8♣️', 'A♣️']) == 20)
-# print(get_cards_points(['A♣️', '8♣️', 'A♣️', 'K♣️']) == 20)
-# print(get_cards_points(['4♣️', '8♣️', 'A♣️', 'K♣️']) == 23)
-# print(get_cards_points(['8♣️', '4♣️', 'A♣️', '2♣️', 'J♣️']) == 25)
-
 
 async def play_blackjack_turn(message: Message, state: FSMContext) -> None:
     """
-    Управляющая функция. Вызывает функцию броска кубиков roll_dice.
-    Вызывает функцию проверки комбинации check_combination. Вызывает функцию печати кубиков print_dice.
-    :return: кортеж: (mark: оценка, summa: сумма, result: название выпавшей комбинации, dice_list: список кубиков)
+    Управляющая функция. Вызывает функцию выбора карты pick_card.
+    Сохраняет карту save_card.
+    Печатает карты игрока print_cards.
     """
     await sleep(1)
     card = await pick_card(state)
@@ -123,12 +122,20 @@ async def play_blackjack_turn(message: Message, state: FSMContext) -> None:
 
 
 async def check_fairplay(state: FSMContext) -> bool:
+    """
+    Функция проверяет, не пытается ли игрок схитрить и забрать все карты из колоды.
+    Если карт 12 или больше - возвращает False.
+    """
     states = await state.get_data()
     cards = states.get('player_cards')
     return not len(cards) > 12
 
 
 async def bot_need_more(state: FSMContext) -> bool:
+    """
+    Функция проверяет, нужно ли боту брать ещё карту.
+    Если у бота меньше 17 очков - нужно брать ещё.
+    """
     states = await state.get_data()
     cards = states.get('bot_cards')
     cards_points = await get_cards_points(cards)
@@ -137,9 +144,9 @@ async def bot_need_more(state: FSMContext) -> bool:
 
 async def play_blackjack_bot_turn(message: Message, state: FSMContext) -> None:
     """
-    Управляющая функция. Вызывает функцию броска кубиков roll_dice.
-    Вызывает функцию проверки комбинации check_combination. Вызывает функцию печати кубиков print_dice.
-    :return: кортеж: (mark: оценка, summa: сумма, result: название выпавшей комбинации, dice_list: список кубиков)
+    Управляющая функция. Вызывает функцию взятия карты за бота pick_card. Сохраняет карту save_card.
+    Вызывает функцию проверки необходимости брать ещё карту bot_need_more. Если нужно, вызывает рекурсивно саму себя.
+    Иначе печатает ответ бота "Мне достаточно".
     """
     card = await pick_card(state)
     if card:
@@ -147,10 +154,13 @@ async def play_blackjack_bot_turn(message: Message, state: FSMContext) -> None:
     if await bot_need_more(state):
         await play_blackjack_bot_turn(message, state)
     else:
-        await message.answer('👤 Мне достаточно')
+        await message.answer('🤖 Мне достаточно')
 
 
 async def inc_round_counter(state: FSMContext) -> None:
+    """
+    Функция увеличивает счетчик раундов на 1.
+    """
     states = await state.get_data()
     round_counter = states.get('round_counter')
     round_counter += 1
@@ -159,6 +169,9 @@ async def inc_round_counter(state: FSMContext) -> None:
 
 
 async def set_blackjack_winner(message: Message, state: FSMContext) -> None:
+    """
+    Функция определяет победителя раунда и печатает результат.
+    """
     await sleep(1)
     await message.answer('Ок, вскрываемся...')
     states = await state.get_data()
@@ -170,7 +183,7 @@ async def set_blackjack_winner(message: Message, state: FSMContext) -> None:
     await sleep(2)
     await message.answer(f"🤵 Твой результат: {'перебор' if player_points > 21 else player_points}\n"
                          f"{', '.join(player_cards)}")
-    await message.answer(f"👤 Мой результат: {'перебор' if bot_points > 21 else bot_points}\n"
+    await message.answer(f"🤖 Мой результат: {'перебор' if bot_points > 21 else bot_points}\n"
                          f"{', '.join(bot_cards)}")
 
     await inc_round_counter(state)
@@ -181,7 +194,7 @@ async def set_blackjack_winner(message: Message, state: FSMContext) -> None:
         await message.answer('🤵 Ты победил', reply_markup=await blackjack_next_round())
     elif (22 > bot_points > player_points) or (bot_points < 22 and player_points >= 22):
         await reward_bot(state)
-        await message.answer('👤 Я победил', reply_markup=await blackjack_next_round())
+        await message.answer('🤖 Я победил', reply_markup=await blackjack_next_round())
     else:
         await message.answer('Ничья', reply_markup=await blackjack_next_round())
 
@@ -204,13 +217,14 @@ async def play_blackjack_round(message: Message, state: FSMContext) -> None:
     if last_winner is None or last_winner == 'player':
         await message.answer(f'🤵 Твой ход...', reply_markup=await take_card())
     else:
-        await message.answer(f'👤 Мой ход...', reply_markup=await bot_takes_card())
+        await message.answer(f'🤖 Мой ход...', reply_markup=await bot_takes_card())
 
 
 async def finish_blackjack(message: Message, state: FSMContext, winner: str) -> None:
     """
-    Функция начинает новый раунд. Показывает сообщение с текущим счетом.
-    В зависимости от того, кто победил в прошлом раунде - тому предлагает сделать ход нажатием на инлайн-кнопку.
+    Функция завершает игру.
+    В зависимости от победителя печатает соответствующую эмоцию бота.
+    Сбрасывает состояния игры и выводит меню с играми.
     """
     if winner == 'player':
         await print_emotion(message, False)
@@ -219,5 +233,4 @@ async def finish_blackjack(message: Message, state: FSMContext, winner: str) -> 
     await state.finish()
     await sleep(3)
     commands = await get_default_commands()
-    await message.answer(f"Во что сыграем?\n\n{commands}", reply_markup=ReplyKeyboardRemove())
-
+    await message.answer(f"🤖 Во что сыграем?\n\n{commands}", reply_markup=ReplyKeyboardRemove())

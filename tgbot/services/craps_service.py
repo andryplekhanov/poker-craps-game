@@ -145,15 +145,15 @@ async def should_bot_reroll(message: Message, state: FSMContext) -> bool:
 
     if last_winner is None or last_winner == 'player':
         if (bot_mark == player_mark) and (bot_summa > player_summa):
-            await message.answer(f'👤 Я решил не перебрасывать')
+            await message.answer(f'🤖 Я решил не перебрасывать')
             return False
         elif bot_mark > player_mark:
-            await message.answer(f'👤 Я решил не перебрасывать')
+            await message.answer(f'🤖 Я решил не перебрасывать')
             return False
         return True
 
     if bot_mark >= 6:
-        await message.answer(f'👤 Я решил не перебрасывать')
+        await message.answer(f'🤖 Я решил не перебрасывать')
         return False
     return True
 
@@ -170,7 +170,7 @@ async def choose_dices_for_bots_reroll(message: Message, state: FSMContext) -> s
     bot_dice_list = states.get('bot_dice_list')  # [5, 4, 5, 6, 1]
 
     if bot_mark == 2:
-        await message.answer(f'👤 Я решил перебросить все...')
+        await message.answer(f'🤖 Я решил перебросить все...')
         return 'all'
 
     combination_dict = Counter(bot_dice_list)  # {5: 2, 6: 1, 4: 1, 1: 1}
@@ -229,7 +229,7 @@ async def finish_game(message: Message, player_score: int, bot_score: int, state
     Функция показывает итоговый результат игры и в зависимости от него - эмоциональную реакцию бота.
     """
     await state.finish()
-    await message.answer(f"🏁 Игра окончена со счётом:\n🤵 Ты <b>{player_score}:{bot_score}</b> Бот 👤")
+    await message.answer(f"🏁 Игра окончена со счётом:\n🤵 Ты <b>{player_score}:{bot_score}</b> Бот 🤖")
     await sleep(2)
     if player_score > bot_score:
         await print_emotion(message=message, bot_win=False)
@@ -237,7 +237,7 @@ async def finish_game(message: Message, player_score: int, bot_score: int, state
         await print_emotion(message=message, bot_win=True)
     await sleep(3)
     commands = await get_default_commands()
-    await message.answer(f"Во что сыграем?\n\n{commands}", reply_markup=ReplyKeyboardRemove())
+    await message.answer(f"🤖 Во что сыграем?\n\n{commands}", reply_markup=ReplyKeyboardRemove())
 
 
 async def set_winner(message: Message, state: FSMContext) -> None:
@@ -256,14 +256,14 @@ async def set_winner(message: Message, state: FSMContext) -> None:
         text = '🤵 Ты выиграл. У тебя старше комбинация.'
     elif player_mark < bot_mark:
         await reward_bot(state)
-        text = '👤 Я выиграл. У меня старше комбинация.'
+        text = '🤖 Я выиграл. У меня старше комбинация.'
     else:
         if player_summa > bot_summa:
             await reward_player(state)
             text = '🤵 Ты выиграл. У тебя больше сумма.'
         elif player_summa < bot_summa:
             await reward_bot(state)
-            text = '👤 Я выиграл. У меня больше сумма.'
+            text = '🤖 Я выиграл. У меня больше сумма.'
         else:
             text = 'Ничья.'
     await message.answer(text, reply_markup=await do_next())
@@ -296,4 +296,4 @@ async def play_round(message: Message, state: FSMContext) -> None:
     if last_winner is None or last_winner == 'player':
         await message.answer(f'🤵 Твой бросок...', reply_markup=await do_roll())
     else:
-        await message.answer(f'👤 Мой бросок...', reply_markup=await bot_roll())
+        await message.answer(f'🤖 Мой бросок...', reply_markup=await bot_roll())

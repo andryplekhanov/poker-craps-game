@@ -3,7 +3,7 @@ from asyncio import sleep
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
+from aiogram.types import Message, CallbackQuery
 
 from tgbot.keyboards.inline_blackjack import blackjack_start_game, blackjack_action_choice, take_card, bot_takes_card, \
     blackjack_next_round
@@ -11,8 +11,7 @@ from tgbot.keyboards.reply import blackjack_game_actions
 from tgbot.services.blackjack_service import play_blackjack_round, play_blackjack_turn, \
     play_blackjack_bot_turn, set_blackjack_winner, finish_blackjack, inc_round_counter, check_fairplay
 from tgbot.services.craps_service import reward_bot
-from tgbot.services.default_commands import get_default_commands
-from tgbot.services.printer import print_blackjack_rules, print_cards, print_emotion
+from tgbot.services.printer import print_blackjack_rules, print_cards
 
 
 async def blackjack(message: Message, state: FSMContext):
@@ -28,9 +27,7 @@ async def blackjack(message: Message, state: FSMContext):
 async def start_blackjack(call: CallbackQuery, state: FSMContext):
     """
     Хендлер, начинающий игру. Реагирует на нажатие инлайн-кнопки blackjack_start_game.
-    Вызывает функцию choose_word и получает слово.
-    Записывает состояния игры good_letters, bad_letters, errors и word,
-    затем вызывает состояние wait_letter и ожидает ввод буквы.
+    Задаёт начальные состояния и вызывает новый раунд play_blackjack_round.
     """
     await call.message.edit_reply_markup(reply_markup=None)
     async with state.proxy() as data:
@@ -46,10 +43,10 @@ async def start_blackjack(call: CallbackQuery, state: FSMContext):
 
 async def player_takes_card(call: CallbackQuery, state: FSMContext):
     """
-    Хендлер, реагирующий на нажатие инлайн-кнопки 'do_roll' - осуществляет бросок кубиков за игрока.
-    Вызывает управляющую функцию play_turn, получает результат и сохраняет его с помощью функции save_result.
-    Далее проверяет, чей сейчас ход и предлагает боту либо совершить свой бросок,
-    либо (если бот уже бросал) перебросить кубики.
+    Хендлер, реагирующий на нажатие инлайн-кнопки 'Взять карту' и 'Ещё' - делает ход за игрока (play_blackjack_turn).
+    Проверяет игрока на жульничество (check_fairplay).
+    Если сжульничал - завершает раунд победой бота.
+    Иначе печатает инлайн-клавиатуру blackjack_action_choice с выбором действий.
     """
     await call.message.edit_reply_markup(reply_markup=None)
     await play_blackjack_turn(call.message, state)
@@ -58,23 +55,34 @@ async def player_takes_card(call: CallbackQuery, state: FSMContext):
     else:
         await inc_round_counter(state)
         await reward_bot(state)
-        await call.message.answer('👤 Тебе засчитано поражение за попытку жульничества',
+        await call.message.answer('🤖 Тебе засчитано поражение за попытку жульничества',
                                   reply_markup=await blackjack_next_round())
     await call.message.delete()
 
 
 async def player_enough_card(call: CallbackQuery, state: FSMContext):
+    """
+    Хендлер, реагирующий на нажатие инлайн-кнопки "Хватит".
+    В зависимости от того, чей сейчас ход, либо предлагает боту сделать ход,
+    либо устанавливает победителя функцией set_blackjack_winner.
+    """
     await call.message.edit_reply_markup(reply_markup=None)
     states = await state.get_data()
     last_winner = states.get('last_winner')
     if last_winner is None or last_winner == 'player':
-        await call.message.answer(f'👤 Мой ход...', reply_markup=await bot_takes_card())
+        await call.message.answer(f'🤖 Мой ход...', reply_markup=await bot_takes_card())
     else:
         await set_blackjack_winner(call.message, state)
     await call.message.delete()
 
 
 async def bot_take_card(call: CallbackQuery, state: FSMContext):
+    """
+    Функция реагирует на нажатие инлайн-кнопки 'Ок'.
+    Активирует ход за бота (play_blackjack_bot_turn).
+    В зависимости от того, чей сейчас ход, либо предлагает игроку сделать ход,
+    либо устанавливает победителя функцией set_blackjack_winner.
+    """
     await call.message.edit_reply_markup(reply_markup=None)
     await play_blackjack_bot_turn(call.message, state)
     states = await state.get_data()
@@ -90,6 +98,12 @@ async def bot_take_card(call: CallbackQuery, state: FSMContext):
 
 
 async def blackjack_next_round_handler(call: CallbackQuery, state: FSMContext):
+    """
+    Функция реагирует на нажатие инлайн-кнопки "Далее".
+    Проверяет, нет ли победителя игры.
+    Если есть - завершает игру функцией finish_blackjack.
+    Иначе - продолжает игру функцией play_blackjack_round.
+    """
     await call.message.edit_reply_markup(reply_markup=None)
     states = await state.get_data()
     player_score, bot_score = states.get('player_score'), states.get('bot_score')
@@ -113,15 +127,15 @@ async def blackjack_next_round_handler(call: CallbackQuery, state: FSMContext):
 
 async def give_up_blackjack(message: Message, state: FSMContext):
     """
-    Хендлер, реагирующий на нажатие текстовой кнопки 'Сдаться и остановить игру'.
-    Вызывает функцию завершения игры finish_blackjack_game с победой бота.
+    Хендлер, реагирующий на нажатие текстовой кнопки 'Сдаюсь'.
+    Вызывает функцию завершения игры finish_blackjack с победой бота.
     """
     await finish_blackjack(message, state, 'bot')
 
 
 async def show_rules_blackjack(message: Message):
     """
-    Хендлер, реагирующий на нажатие текстовой кнопки 'Правила игры'.
+    Хендлер, реагирующий на нажатие текстовой кнопки 'Подсмотреть правила'.
     Показывает правила игры.
     """
     await print_blackjack_rules(message)

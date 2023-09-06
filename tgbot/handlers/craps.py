@@ -34,7 +34,7 @@ async def give_up(message: Message, state: FSMContext):
     await print_emotion(message=message, bot_win=True)
     await sleep(3)
     commands = await get_default_commands()
-    await message.answer(f"Я реагирую на следующие команды:\n\n{commands}", reply_markup=ReplyKeyboardRemove())
+    await message.answer(f"🤖 Во что сыграем?\n\n{commands}", reply_markup=ReplyKeyboardRemove())
 
 
 async def show_rules(message: Message):
@@ -56,7 +56,8 @@ async def start_craps(call: CallbackQuery, state: FSMContext):
         data['round_counter'] = 1
         data['player_score'] = 0
         data['bot_score'] = 0
-    await call.message.answer('👍 Начинаем новую игру.\nИграем до 5 очков.\nПоехали!!!', reply_markup=craps_game_actions)
+    await call.message.answer('🤖 Начинаем новую игру.\nИграем до 5 очков.\nПоехали!!!',
+                              reply_markup=craps_game_actions)
     await sleep(3)
     await play_round(call.message, state)
     await call.message.delete()
@@ -79,9 +80,9 @@ async def players_roll(call: CallbackQuery, state: FSMContext):
     states = await state.get_data()
     last_winner = states.get('last_winner')
     if last_winner is None or last_winner == 'player':
-        await call.message.answer(f'👤 Мой бросок...', reply_markup=await bot_roll())
+        await call.message.answer(f'🤖 Мой бросок...', reply_markup=await bot_roll())
     else:
-        await call.message.answer(f'👤 Теперь мой черёд...', reply_markup=await bot_reroll())
+        await call.message.answer(f'🤖 Теперь мой черёд...', reply_markup=await bot_reroll())
 
 
 async def bots_roll(call: CallbackQuery, state: FSMContext):
@@ -94,7 +95,7 @@ async def bots_roll(call: CallbackQuery, state: FSMContext):
     await call.message.edit_reply_markup(reply_markup=None)
     bot_mark, bot_summa, bot_result, bot_dice_list = await play_turn(call.message)
     await save_result(bot_mark, bot_summa, bot_dice_list, save_for='bot', state=state)
-    await call.message.answer(f"👤 Мой результат: <b>{bot_result} ({bot_summa})</b>", parse_mode='html')
+    await call.message.answer(f"🤖 Мой результат: <b>{bot_result} ({bot_summa})</b>", parse_mode='html')
 
     await sleep(2)
 
@@ -118,14 +119,14 @@ async def bots_reroll(call: CallbackQuery, state: FSMContext):
     await call.message.edit_reply_markup(reply_markup=None)
     is_reroll = await should_bot_reroll(call.message, state)
     if is_reroll:
-        await call.message.answer(f"👤 Я перебрасываю...")
+        await call.message.answer(f"🤖 Я перебрасываю...")
         dices_for_bots_reroll = await choose_dices_for_bots_reroll(call.message, state)
         if dices_for_bots_reroll == 'all':
             bot_mark, bot_summa, bot_result, bot_dice_list = await play_turn(call.message)
         else:
             bot_mark, bot_summa, bot_result, bot_dice_list = await play_reroll(call.message, state, 'bot')
         await save_result(bot_mark, bot_summa, bot_dice_list, save_for='bot', state=state)
-        await call.message.answer(f"👤 Мой результат: <b>{bot_result} ({bot_summa})</b>", parse_mode='html')
+        await call.message.answer(f"🤖 Мой результат: <b>{bot_result} ({bot_summa})</b>", parse_mode='html')
 
     states = await state.get_data()
     if states.get('last_winner') == 'bot':
@@ -173,7 +174,7 @@ async def reroll_done(call: CallbackQuery, callback_data: dict, state: FSMContex
     if states.get('last_winner') == 'bot':
         await set_winner(call.message, state)
     else:
-        await call.message.answer(f'👤 Теперь мой черёд...', reply_markup=await bot_reroll())
+        await call.message.answer(f'🤖 Теперь мой черёд...', reply_markup=await bot_reroll())
 
 
 async def next_round(call: CallbackQuery, state: FSMContext):
