@@ -17,7 +17,7 @@ async def gallows(message: Message, state: FSMContext):
     """
     await state.finish()
     await print_gallows_rules(message)
-    await message.answer('Ну что, проверим твои знания русского языка? Или ты забздел?',
+    await message.answer('🤖 Ну что, проверим твои знания русского языка? Или ты забздел?',
                          reply_markup=await gallows_start_game())
 
 
@@ -36,7 +36,7 @@ async def start_gallows(call: CallbackQuery, state: FSMContext):
         data['bad_letters'] = list()
         data['errors'] = 0
         data['word'] = list(word)
-    await call.message.answer(f"👍 Начинаем новую игру.\n"
+    await call.message.answer(f"🤖 Начинаем новую игру.\n"
                               f"Я загадал слово из {len(word)} букв. Отгадай его.\n"
                               "Поехали!!!\nВведи букву...", reply_markup=gallows_game_actions)
     await print_gallows_letter(call.message, state)
@@ -55,6 +55,7 @@ async def get_letter(message: Message, state: FSMContext):
     if not letter.isalpha() or not len(letter) == 1:
         await message.answer('Вам нужно ввести 1 букву')
     else:
+        letter = letter.lower()
         await check_letter(message, state, letter)
     await check_gallows_game_status(message, state)
 

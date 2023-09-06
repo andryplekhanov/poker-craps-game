@@ -18,3 +18,13 @@ gallows_game_actions = ReplyKeyboardMarkup(
     ],
     one_time_keyboard=True
 )
+
+
+blackjack_game_actions = ReplyKeyboardMarkup(
+    resize_keyboard=True,
+    keyboard=[
+        [KeyboardButton(text='⛔️ Сдаюсь ⛔️')],
+        [KeyboardButton(text='🔎 Подсмотреть правила 🔎')],
+    ],
+    one_time_keyboard=True
+)

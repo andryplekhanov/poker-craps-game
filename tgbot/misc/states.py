@@ -1,20 +1,22 @@
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
 
-class CrapsGame(StatesGroup):
+class Games(StatesGroup):
     """
     Класс реализует состояние игры.
 
     Attributes:
         round_counter (int): счетчик раундов.
         last_winner (str): победитель прошлого раунда.
+        deck (list): колода карт.
     """
 
     round_counter = State()
     last_winner = State()
+    deck = State()
 
 
-class CrapsPlayers(StatesGroup):
+class Players(StatesGroup):
     """
     Класс реализует состояние игроков внутри игры.
 
@@ -23,6 +25,8 @@ class CrapsPlayers(StatesGroup):
         player_dice_list (list): кубики игрока
         player_mark (int): оценка броска игрока
         player_summa (int): сумма игрока
+        player_cards (list): карты игрока
+        bot_cards (list): карты бота
         bot_score (int): счёт бота
         bot_dice_list (list): кубики бота
         bot_mark (int): оценка броска бота
@@ -33,7 +37,9 @@ class CrapsPlayers(StatesGroup):
     player_dice_list = State()
     player_mark = State()
     player_summa = State()
+    player_cards = State()
 
+    bot_cards = State()
     bot_score = State()
     bot_dice_list = State()
     bot_mark = State()
