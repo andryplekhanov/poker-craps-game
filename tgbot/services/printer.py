@@ -60,6 +60,8 @@ SUITS = ['♠️', '♥️', '♣️', '♦️']
 
 VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
 
+RUS_VALUES = ['6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т']
+
 
 async def print_dice(message: Message, dices: list[int]) -> None:
     """
@@ -169,10 +171,31 @@ async def print_blackjack_rules(message: Message) -> None:
     await message.answer(text, parse_mode='html')
 
 
+async def print_fool_rules(message: Message) -> None:
+    """
+    Функция печатает правила игры в "Дурака".
+    """
+    text = ('<b>Правила игры в "Дурака":</b>\n\n')
+    await message.answer(text, parse_mode='html')
+
+
 async def print_cards(message: Message, cards: list, print_as: str) -> None:
     """
     Функция печатает карты при игре в "Blackjack".
     Если print_as == 'open' - в открытую, иначе рубашкой вверх.
     """
     result = ', '.join(cards) if print_as == 'open' else '🀄' * len(cards)
+    await message.answer(result)
+
+
+async def print_fool_desk(message: Message, state: FSMContext) -> None:
+    """
+    Функция печатает карты при игре в "Дурак".
+    """
+    states = await state.get_data()
+    deck = states.get('deck')
+    player_cards = states.get('player_cards')
+    bot_cards = states.get('bot_cards')
+    trump = states.get('trump')
+    result = f"({trump}) {'🀄' * len(deck)}\n\n🤖 Бот: {'🀄' * len(bot_cards)}\n🤵 Вы: {', '.join(player_cards)}"
     await message.answer(result)
