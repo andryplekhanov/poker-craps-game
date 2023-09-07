@@ -5,7 +5,9 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from tgbot.keyboards.inline_fool import fool_start_game
-from tgbot.services.fool_service import create_deck, play_fool_round, hand_out_cards, pick_card
+from tgbot.misc.factories import for_fool_player_turn
+from tgbot.services.fool_service import create_deck, play_fool_round, hand_out_cards, pick_card, place_card_on_desk, \
+    bot_try_cover
 from tgbot.services.printer import print_fool_rules
 
 
@@ -41,6 +43,14 @@ async def start_fool(call: CallbackQuery, state: FSMContext):
     await call.message.delete()
 
 
+async def player_put_card(call: CallbackQuery, callback_data: dict, state: FSMContext):
+    await call.message.edit_reply_markup(reply_markup=None)
+    card = callback_data.get('card')
+    await place_card_on_desk(call.message, state, card, place_for='player')
+    await bot_try_cover(call.message, state, card)
+
+
 def register_fool(dp: Dispatcher):
     dp.register_message_handler(fool, commands=["fool"], state="*")
     dp.register_callback_query_handler(start_fool, text='fool_start_game', state="*")
+    dp.register_callback_query_handler(player_put_card, for_fool_player_turn.filter(), state="*")

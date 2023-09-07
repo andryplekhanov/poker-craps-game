@@ -10,11 +10,13 @@ class Games(StatesGroup):
         last_winner (str): победитель прошлого раунда.
         trump (str): козырь для игры в Дурака.
         deck (list): колода карт.
+        desk (list): карты в игре.
     """
 
     round_counter = State()
     last_winner = State()
     deck = State()
+    desk = State()
     trump = State()
 
 

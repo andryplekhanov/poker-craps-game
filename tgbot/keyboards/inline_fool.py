@@ -1,5 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+from tgbot.misc.factories import for_fool_player_turn
+
 
 async def fool_start_game() -> InlineKeyboardMarkup:
     """
@@ -11,42 +13,14 @@ async def fool_start_game() -> InlineKeyboardMarkup:
     return keyboard
 
 
-# async def blackjack_next_round() -> InlineKeyboardMarkup:
-#     """
-#     Клавиатура с кнопкой - следующий раунд Blackjack
-#     """
-#
-#     keyboard = InlineKeyboardMarkup()
-#     keyboard.add(InlineKeyboardButton(text='♣️ Далее ... ♠️', callback_data='blackjack_next_round'))
-#     return keyboard
-#
-#
-# async def take_card() -> InlineKeyboardMarkup:
-#     """
-#     Клавиатура с кнопкой - Взять карту
-#     """
-#
-#     keyboard = InlineKeyboardMarkup()
-#     keyboard.add(InlineKeyboardButton(text='Взять карту', callback_data='take_card'))
-#     return keyboard
-#
-#
-# async def bot_takes_card() -> InlineKeyboardMarkup:
-#     """
-#     Клавиатура с кнопкой - Бот берёт карты
-#     """
-#
-#     keyboard = InlineKeyboardMarkup()
-#     keyboard.add(InlineKeyboardButton(text='Ок', callback_data='bot_takes_card'))
-#     return keyboard
-#
-#
-# async def blackjack_action_choice() -> InlineKeyboardMarkup:
-#     """
-#     Клавиатура с кнопками - "Взять ещё карту" и "Хватит"
-#     """
-#
-#     keyboard = InlineKeyboardMarkup()
-#     keyboard.add(InlineKeyboardButton(text='Ещё...', callback_data='take_card'))
-#     keyboard.add(InlineKeyboardButton(text='Хватит', callback_data='enough_card'))
-#     return keyboard
+async def fool_player_turn(cards: list) -> InlineKeyboardMarkup:
+    keyboard = InlineKeyboardMarkup(row_width=6, inline_keyboard=[
+        [InlineKeyboardButton(text=card, callback_data=for_fool_player_turn.new(card=card)) for card in cards],
+    ])
+    return keyboard
+
+
+async def fool_bot_turn() -> InlineKeyboardMarkup:
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton(text='♣️ Ok ♠️', callback_data='fool_bot_turn'))
+    return keyboard

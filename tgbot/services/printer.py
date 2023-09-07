@@ -56,11 +56,21 @@ UNHAPPY_EMOTIONS = [
     '🤖 Радуйся, ты победил! Но я всё равно круче! Сразимся ещё раз?',
 ]
 
-SUITS = ['♠️', '♥️', '♣️', '♦️']
+SUITS = ['♠', '♥', '♣', '♦']
 
 VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
 
-RUS_VALUES = ['6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т']
+RUS_CARDS_VALUES = {
+    '6♠': 6, '6♥': 6, '6♣': 6, '6♦': 6,
+    '7♠': 7, '7♥': 7, '7♣': 7, '7♦': 7,
+    '8♠': 8, '8♥': 8, '8♣': 8, '8♦': 8,
+    '9♠': 9, '9♥': 9, '9♣': 9, '9♦': 9,
+    '10♠': 10, '10♥': 10, '10♣': 10, '10♦': 10,
+    'В♠': 11, 'В♥': 11, 'В♣': 11, 'В♦': 11,
+    'Д♠': 12, 'Д♥': 12, 'Д♣': 12, 'Д♦': 12,
+    'К♠': 13, 'К♥': 13, 'К♣': 13, 'К♦': 13,
+    'Т♠': 14, 'Т♥': 14, 'Т♣': 14, 'Т♦': 14,
+}
 
 
 async def print_dice(message: Message, dices: list[int]) -> None:
@@ -197,5 +207,6 @@ async def print_fool_desk(message: Message, state: FSMContext) -> None:
     player_cards = states.get('player_cards')
     bot_cards = states.get('bot_cards')
     trump = states.get('trump')
-    result = f"({trump}) {'🀄' * len(deck)}\n\n🤖 Бот: {'🀄' * len(bot_cards)}\n🤵 Вы: {', '.join(player_cards)}"
+    # result = f"({trump}) {'🀄' * len(deck)}\n\n🤖 Бот: {'🀄' * len(bot_cards)}\n🤵 Вы: {', '.join(player_cards)}"
+    result = f"({trump}) {'🀄' * len(deck)}\n\n🤖 Бот: {', '.join(bot_cards)}\n🤵 Вы: {', '.join(player_cards)}"
     await message.answer(result)
