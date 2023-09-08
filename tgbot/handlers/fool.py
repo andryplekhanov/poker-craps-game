@@ -5,9 +5,9 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from tgbot.keyboards.inline_fool import fool_start_game, show_done_button
-from tgbot.misc.factories import for_fool_player_turn, for_fool_propose_more_cards_done
+from tgbot.misc.factories import for_fool_player_turn, for_fool_propose_more_cards_done, for_fool_player_cover
 from tgbot.services.fool_service import create_deck, play_fool_round, hand_out_cards, pick_card, place_card_on_desk, \
-    bot_try_cover, check_who_first
+    bot_try_cover, check_who_first, bot_choose_card, player_need_to_cover
 from tgbot.services.printer import print_fool_rules
 
 
@@ -61,6 +61,31 @@ async def player_put_card(call: CallbackQuery, callback_data: dict, state: FSMCo
         await call.message.answer('🤵 Нету...', reply_markup=await show_done_button(action='next'))
 
 
+async def player_covers(call: CallbackQuery, callback_data: dict, state: FSMContext):
+    await call.message.edit_reply_markup(reply_markup=None)
+    card = callback_data.get('card')
+    await place_card_on_desk(call.message, state, card, place_for='player')
+    await call.message.answer(f'🤵 Крою {card}')
+    await call.message.delete()
+
+
+async def bot_turn(call: CallbackQuery, state: FSMContext):
+    await call.message.edit_reply_markup(reply_markup=None)
+    card = await bot_choose_card(state)
+    if not card:
+        await call.message.answer('🤖 no card to turn')
+    else:
+        await place_card_on_desk(call.message, state, card, place_for='bot')
+        await call.message.answer(card)
+
+    await player_need_to_cover(call.message, state, bot_card=card)
+    #
+    # if callback_data.get('action') == 'cover':
+    #     await bot_try_cover(call.message, state, card)
+    # else:
+    #     await call.message.answer('🤵 Нету...', reply_markup=await show_done_button(action='next'))
+
+
 async def player_propose_more_cards_done(call: CallbackQuery, callback_data: dict, state: FSMContext):
     await call.message.edit_reply_markup(reply_markup=None)
 
@@ -88,5 +113,7 @@ async def player_propose_more_cards_done(call: CallbackQuery, callback_data: dic
 def register_fool(dp: Dispatcher):
     dp.register_message_handler(fool, commands=["fool"], state="*")
     dp.register_callback_query_handler(start_fool, text='fool_start_game', state="*")
+    dp.register_callback_query_handler(bot_turn, text='fool_bot_turn', state="*")
+    dp.register_callback_query_handler(player_covers, for_fool_player_cover.filter(), state="*")
     dp.register_callback_query_handler(player_put_card, for_fool_player_turn.filter(), state="*")
     dp.register_callback_query_handler(player_propose_more_cards_done, for_fool_propose_more_cards_done.filter(), state="*")
