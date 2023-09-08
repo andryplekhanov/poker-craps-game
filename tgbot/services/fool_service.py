@@ -4,7 +4,6 @@ from typing import Union
 
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
-from aiogram.utils.exceptions import MessageToDeleteNotFound
 
 from tgbot.keyboards.inline_fool import fool_player_turn, fool_bot_turn, propose_more_cards, show_done_button
 from tgbot.services.printer import RUS_CARDS_VALUES, print_fool_desk
@@ -15,6 +14,25 @@ async def create_deck() -> list[str]:
     Функция создаёт новую колоду карт. Возвращает список строк в формате ['Т♣️', 'Д♦️', '6♠️'...]
     """
     return list(RUS_CARDS_VALUES.keys())
+
+
+async def check_who_first(trump: str, player_cards: list[str], bot_cards: list[str]) -> str:
+    players_trumps = [player_card for player_card in player_cards if player_card[-1] == trump[-1]]
+    bots_trumps = [bot_card for bot_card in bot_cards if bot_card[-1] == trump[-1]]
+
+    if players_trumps and bots_trumps:
+        players_trumps_values = [RUS_CARDS_VALUES[card] for card in players_trumps]
+        bots_trumps_values = [RUS_CARDS_VALUES[card] for card in bots_trumps]
+        if min(bots_trumps_values) < min(players_trumps_values):
+            return 'bot'
+        else:
+            return 'player'
+    elif players_trumps and not bots_trumps:
+        return 'player'
+    elif bots_trumps and not players_trumps:
+        return 'bot'
+    else:
+        return choice(['player', 'bot'])
 
 
 async def pick_card(state: FSMContext) -> Union[str, None]:
@@ -145,4 +163,4 @@ async def play_fool_round(message: Message, state: FSMContext) -> None:
     if states.get('last_winner') == 'bot':
         await message.answer(f'🤖 Мой ход...', reply_markup=await fool_bot_turn())
     else:
-        await message.answer(f'🤵 Твой ход...', reply_markup=await fool_player_turn(states.get('player_cards')))
+        await message.answer(f'🤵 Твой ход...', reply_markup=await fool_player_turn(states.get('player_cards'), 'cover'))
