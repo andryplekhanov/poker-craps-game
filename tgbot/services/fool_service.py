@@ -1,10 +1,12 @@
+from asyncio import sleep
 from random import choice
 from typing import Union
 
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
+from aiogram.utils.exceptions import MessageToDeleteNotFound
 
-from tgbot.keyboards.inline_fool import fool_player_turn, fool_bot_turn
+from tgbot.keyboards.inline_fool import fool_player_turn, fool_bot_turn, propose_more_cards, show_done_button
 from tgbot.services.printer import RUS_CARDS_VALUES, print_fool_desk
 
 
@@ -34,7 +36,8 @@ async def pick_card(state: FSMContext) -> Union[str, None]:
 
 
 async def hand_out_cards(state: FSMContext, num: int) -> list[str]:
-    return [await pick_card(state) for _ in range(num)]
+    cards = [await pick_card(state) for _ in range(num)]
+    return [card for card in cards if card is not None]
 
 
 async def place_card_on_desk(message: Message, state: FSMContext, card: str, place_for: str) -> None:
@@ -80,6 +83,8 @@ async def bot_choose_card_for_cover(state: FSMContext, card: str) -> Union[str, 
         cards_for_cover_values = [RUS_CARDS_VALUES[bot_card] for bot_card in cards_for_cover]  # [10, 9]
         card_for_cover = [bot_card for bot_card in cards_for_cover
                           if RUS_CARDS_VALUES[bot_card] == min(cards_for_cover_values)]  # ['9♣']
+        if player_suit == trump[-1] and RUS_CARDS_VALUES[card_for_cover[0]] in [12, 13, 14] and len(deck) > 6:  # Если игрок сходил козырем и бот может покрыть его только Д, К, Т и в колоде более 6 карт, то бот не кроет карту
+            return None
         return card_for_cover[0]
     else:  # Если не нашлось карты
         if player_suit == trump[-1]:  # Если игрок сходил козырем и бот не нашел карту, чтобы его покрыть
@@ -96,13 +101,39 @@ async def bot_choose_card_for_cover(state: FSMContext, card: str) -> Union[str, 
             return None
 
 
+async def check_more_cards(state: FSMContext, check_for: str) -> Union[list, None]:
+    states = await state.get_data()
+    cards_on_desk = states.get('desk')
+    cards = states.get('player_cards') if check_for == 'player' else states.get('bot_cards')
+    values = [RUS_CARDS_VALUES[card] for card in cards_on_desk]
+    result = [card for card in cards if RUS_CARDS_VALUES[card] in values]
+    if result:
+        return result
+    else:
+        return None
+
+
 async def bot_try_cover(message: Message, state: FSMContext, card: str) -> None:
     card_for_cover = await bot_choose_card_for_cover(state, card)
     if card_for_cover:
-        await message.answer(f'🤖 {card} крою {card_for_cover}\nЕсть ещё?')
         await place_card_on_desk(message, state, card_for_cover, 'bot')
+        await message.answer(f'🤖 {card} крою {card_for_cover}\nЕсть ещё?')
+        more_cards = await check_more_cards(state, 'player')
+        await sleep(1)
+        if more_cards is not None:
+            await message.answer('Вы можете добавить эти карты',
+                                 reply_markup=await propose_more_cards(cards=more_cards, action='cover'))
+        else:
+            await message.answer('🤵 Нету...', reply_markup=await show_done_button(action='next'))
     else:
         await message.answer(f'🤖 {card} беру. Есть ещё?')
+        more_cards = await check_more_cards(state, 'player')
+        await sleep(1)
+        if more_cards is not None:
+            await message.answer('Вы можете добавить эти карты',
+                                 reply_markup=await propose_more_cards(cards=more_cards, action='add'))
+        else:
+            await message.answer('🤵 Нету...', reply_markup=await show_done_button(action='take'))
 
 
 async def play_fool_round(message: Message, state: FSMContext) -> None:
