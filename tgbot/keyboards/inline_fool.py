@@ -12,6 +12,17 @@ async def check_players_card_for_cover(player_card: str, bot_card: str, trump: s
     return InlineKeyboardButton(text=player_card, callback_data='no_react')
 
 
+async def prepare_big_keyboard(buttons: list, keyboard: InlineKeyboardMarkup) -> InlineKeyboardMarkup:
+    keyboard.row(*buttons[:6])
+    if len(buttons) > 6:
+        keyboard.row(*buttons[6:12])
+    if len(buttons) > 12:
+        keyboard.row(*buttons[12:18])
+    if len(buttons) > 18:
+        keyboard.row(*buttons[18:24])
+    return keyboard
+
+
 async def fool_start_game() -> InlineKeyboardMarkup:
     """
     Клавиатура с кнопкой - Начало игры Дурак
@@ -23,33 +34,32 @@ async def fool_start_game() -> InlineKeyboardMarkup:
 
 
 async def fool_player_turn(cards: list, action: str) -> InlineKeyboardMarkup:
-    keyboard = InlineKeyboardMarkup(row_width=6, inline_keyboard=[
-        [InlineKeyboardButton(text=card, callback_data=for_fool_player_turn.new(card=card, action=action))
-         for card in cards],
-    ])
-    return keyboard
+    keyboard = InlineKeyboardMarkup(row_width=6)
+    buttons = list()
+    for card in cards:
+        buttons.append(InlineKeyboardButton(text=card, callback_data=for_fool_player_turn.new(card=card, action=action)))
+    result = await prepare_big_keyboard(buttons, keyboard)
+    return result
 
 
 async def propose_more_cards(cards: list, action: str) -> InlineKeyboardMarkup:
-    keyboard = InlineKeyboardMarkup(row_width=6, inline_keyboard=[
-        [
-            InlineKeyboardButton(text=card,
-                                 callback_data=for_fool_player_turn.new(card=card, action=action))
-            for card in cards
-        ],
-        [InlineKeyboardButton(text='Готово', callback_data=for_fool_propose_more_cards_done.new(action=action))]
-    ])
-    return keyboard
+    keyboard = InlineKeyboardMarkup(row_width=6)
+    buttons = list()
+    for card in cards:
+        buttons.append(InlineKeyboardButton(text=card, callback_data=for_fool_player_turn.new(card=card, action=action)))
+    result = await prepare_big_keyboard(buttons, keyboard)
+    result.add(InlineKeyboardButton(text='Готово', callback_data=for_fool_propose_more_cards_done.new(action=action)))
+    return result
 
 
 async def player_cover(player_cards: list, bot_card: str, trump: str) -> InlineKeyboardMarkup:
-    keyboard = InlineKeyboardMarkup(row_width=6, inline_keyboard=[
-        [
-            await check_players_card_for_cover(card, bot_card, trump) for card in player_cards
-        ],
-        # [InlineKeyboardButton(text='Беру', callback_data=for_fool_player_takes.new(action=action))]
-    ])
-    return keyboard
+    keyboard = InlineKeyboardMarkup(row_width=6)
+    buttons = list()
+    for card in player_cards:
+        buttons.append(await check_players_card_for_cover(card, bot_card, trump))
+    result = await prepare_big_keyboard(buttons, keyboard)
+    result.add(InlineKeyboardButton(text='Беру', callback_data='player_takes'))
+    return result
 
 
 async def show_done_button(action: str) -> InlineKeyboardMarkup:
@@ -59,7 +69,7 @@ async def show_done_button(action: str) -> InlineKeyboardMarkup:
     return keyboard
 
 
-async def fool_bot_turn() -> InlineKeyboardMarkup:
+async def show_next_button() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(text='♣️ Ok ♠️', callback_data='fool_bot_turn'))
+    keyboard.add(InlineKeyboardButton(text='Далее', callback_data="next_fool_round"))
     return keyboard

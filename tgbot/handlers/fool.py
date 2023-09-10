@@ -4,10 +4,11 @@ from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, CallbackQuery
 
-from tgbot.keyboards.inline_fool import fool_start_game, show_done_button
+from tgbot.keyboards.inline_fool import fool_start_game, show_done_button, fool_player_turn, propose_more_cards
 from tgbot.misc.factories import for_fool_player_turn, for_fool_propose_more_cards_done, for_fool_player_cover
 from tgbot.services.fool_service import create_deck, play_fool_round, hand_out_cards, pick_card, place_card_on_desk, \
-    bot_try_cover, check_who_first, bot_choose_card, player_need_to_cover
+    bot_try_cover, check_who_first, bot_turn, bot_add_all, add_cards_to_player, bot_full_up, player_full_up, \
+    add_cards_to_bot, check_more_cards
 from tgbot.services.printer import print_fool_rules
 
 
@@ -31,6 +32,7 @@ async def start_fool(call: CallbackQuery, state: FSMContext):
     deck = await create_deck()
     async with state.proxy() as data:
         data['deck'] = deck
+        data['trump_used'] = False
 
     trump = await pick_card(state)
     player_cards = await hand_out_cards(state, 6)
@@ -52,68 +54,75 @@ async def start_fool(call: CallbackQuery, state: FSMContext):
 async def player_put_card(call: CallbackQuery, callback_data: dict, state: FSMContext):
     await call.message.edit_reply_markup(reply_markup=None)
     card = callback_data.get('card')
-    await place_card_on_desk(call.message, state, card, place_for='player')
+    await place_card_on_desk(state, card, place_for='player')
     await call.message.answer(card)
 
     if callback_data.get('action') == 'cover':
         await bot_try_cover(call.message, state, card)
     else:
-        await call.message.answer('🤵 Нету...', reply_markup=await show_done_button(action='next'))
+        await call.message.answer(f'🤖 {card} беру. Есть ещё?')
+        more_cards = await check_more_cards(state, 'player')
+        await sleep(1)
+        if more_cards is not None:
+            await call.message.answer('Вы можете добавить эти карты',
+                                 reply_markup=await propose_more_cards(cards=more_cards, action='add'))
+        else:
+            await call.message.answer('🤵 Нету...', reply_markup=await show_done_button(action='take'))
 
 
 async def player_covers(call: CallbackQuery, callback_data: dict, state: FSMContext):
     await call.message.edit_reply_markup(reply_markup=None)
     card = callback_data.get('card')
-    await place_card_on_desk(call.message, state, card, place_for='player')
-    await call.message.answer(f'🤵 Крою {card}')
-    await call.message.delete()
+    await place_card_on_desk(state, card, place_for='player')
+    await call.message.answer(f'🤵 Крою: {card}')
+    await bot_turn(call.message, state, target='add')
 
 
-async def bot_turn(call: CallbackQuery, state: FSMContext):
+async def player_takes(call: CallbackQuery, state: FSMContext):
     await call.message.edit_reply_markup(reply_markup=None)
-    card = await bot_choose_card(state)
-    if not card:
-        await call.message.answer('🤖 no card to turn')
-    else:
-        await place_card_on_desk(call.message, state, card, place_for='bot')
-        await call.message.answer(card)
+    cards = await bot_add_all(state)
+    if cards:
+        await call.message.answer(f"🤖 Вот тебе ещё: {', '.join(cards)}")
+    await add_cards_to_player(state)
 
-    await player_need_to_cover(call.message, state, bot_card=card)
-    #
-    # if callback_data.get('action') == 'cover':
-    #     await bot_try_cover(call.message, state, card)
-    # else:
-    #     await call.message.answer('🤵 Нету...', reply_markup=await show_done_button(action='next'))
+    await bot_full_up(state)
+    await player_full_up(state)
+    async with state.proxy() as data:
+        data['last_winner'] = 'bot'
+    await sleep(2)
+    await play_fool_round(call.message, state)
 
 
 async def player_propose_more_cards_done(call: CallbackQuery, callback_data: dict, state: FSMContext):
     await call.message.edit_reply_markup(reply_markup=None)
-
-    states = await state.get_data()
-    player_cards, bot_cards = states.get('player_cards'), states.get('bot_cards')
-    new_player_cards = await hand_out_cards(state, 6 - len(player_cards))
-    player_cards.extend(new_player_cards)
+    await player_full_up(state)
 
     if callback_data.get('action') in ['next', 'cover']:
-        new_bot_cards = await hand_out_cards(state, 6-len(bot_cards))
-        bot_cards.extend(new_bot_cards)
+        await bot_full_up(state)
         last_winner = 'bot'
     else:
-        desk = states.get('desk')
-        bot_cards.extend(desk)
+        await add_cards_to_bot(state)
         last_winner = 'player'
 
     async with state.proxy() as data:
         data['last_winner'] = last_winner
-        data['player_cards'] = player_cards
-        data['bot_cards'] = bot_cards
+    await play_fool_round(call.message, state)
+
+
+async def next_fool_round(call: CallbackQuery, state: FSMContext):
+    await call.message.edit_reply_markup(reply_markup=None)
+    states = await state.get_data()
+    await bot_full_up(state)
+    await player_full_up(state)
+    await sleep(2)
     await play_fool_round(call.message, state)
 
 
 def register_fool(dp: Dispatcher):
     dp.register_message_handler(fool, commands=["fool"], state="*")
     dp.register_callback_query_handler(start_fool, text='fool_start_game', state="*")
-    dp.register_callback_query_handler(bot_turn, text='fool_bot_turn', state="*")
+    dp.register_callback_query_handler(player_takes, text='player_takes', state="*")
+    dp.register_callback_query_handler(next_fool_round, text='next_fool_round', state="*")
     dp.register_callback_query_handler(player_covers, for_fool_player_cover.filter(), state="*")
     dp.register_callback_query_handler(player_put_card, for_fool_player_turn.filter(), state="*")
     dp.register_callback_query_handler(player_propose_more_cards_done, for_fool_propose_more_cards_done.filter(), state="*")
