@@ -3,11 +3,12 @@ from random import choice
 from typing import Union
 
 from aiogram.dispatcher import FSMContext
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 
 from tgbot.keyboards.inline_fool import fool_player_turn, propose_more_cards, show_done_button, player_cover, \
     show_next_button
-from tgbot.services.printer import RUS_CARDS_VALUES, print_fool_desk
+from tgbot.services.default_commands import get_default_commands
+from tgbot.services.printer import RUS_CARDS_VALUES, print_fool_desk, print_emotion
 
 
 async def create_deck() -> list[str]:
@@ -209,7 +210,7 @@ async def bot_try_cover(message: Message, state: FSMContext, card: str) -> None:
         await place_card_on_desk(state, card_for_cover, 'bot')
         await message.answer(f'🤖 Крою: {card_for_cover}\nЕсть ещё?')
         more_cards = await check_more_cards(state, 'player')
-        await sleep(1)
+        await sleep(2)
         if more_cards is not None:
             await message.answer('Вы можете добавить эти карты',
                                  reply_markup=await propose_more_cards(cards=more_cards, action='cover'))
@@ -218,7 +219,7 @@ async def bot_try_cover(message: Message, state: FSMContext, card: str) -> None:
     else:
         await message.answer(f'🤖 {card} беру. Есть ещё?')
         more_cards = await check_more_cards(state, 'player')
-        await sleep(1)
+        await sleep(2)
         if more_cards is not None:
             await message.answer('Вы можете добавить эти карты',
                                  reply_markup=await propose_more_cards(cards=more_cards, action='add'))
@@ -292,14 +293,44 @@ async def player_full_up(state: FSMContext) -> None:
             data['player_cards'] = player_cards
 
 
+async def check_winner(state: FSMContext) -> bool:
+    states = await state.get_data()
+    player_cards, bot_cards = states.get('player_cards'), states.get('bot_cards')
+    deck = states.get('deck')
+    trump_used = states.get('trump_used')
+
+    return len(deck) == 0 and trump_used and (len(player_cards) == 0 or len(bot_cards) == 0)
+
+
+async def finish_fool_game(message: Message, state: FSMContext) -> None:
+    states = await state.get_data()
+    player_cards, bot_cards = states.get('player_cards'), states.get('bot_cards')
+    await sleep(2)
+    if len(player_cards) < len(bot_cards):
+        await message.answer(f'🤵 Вы выиграли!')
+        await print_emotion(message, False)
+    elif len(bot_cards) < len(player_cards):
+        await message.answer(f'🤖 Бот выиграл!')
+        await print_emotion(message, True)
+    else:
+        await message.answer(f'Ничья')
+
+    await state.finish()
+    await sleep(3)
+    commands = await get_default_commands()
+    await message.answer(f"🤖 Во что сыграем?\n\n{commands}", reply_markup=ReplyKeyboardRemove())
+
+
 async def play_fool_round(message: Message, state: FSMContext) -> None:
     async with state.proxy() as data:
         data['desk'] = []
     await print_fool_desk(message, state)
-    states = await state.get_data()
-
-    if states.get('last_winner') == 'bot':
-        await message.answer(f'🤖 Мой ход...')
-        await bot_turn(message, state, target='turn')
+    if await check_winner(state):
+        await finish_fool_game(message, state)
     else:
-        await message.answer(f'🤵 Твой ход...', reply_markup=await fool_player_turn(states.get('player_cards'), 'cover'))
+        states = await state.get_data()
+        if states.get('last_winner') == 'bot':
+            await message.answer(f'🤖 Мой ход...')
+            await bot_turn(message, state, target='turn')
+        else:
+            await message.answer(f'🤵 Твой ход...', reply_markup=await fool_player_turn(states.get('player_cards'), 'cover'))

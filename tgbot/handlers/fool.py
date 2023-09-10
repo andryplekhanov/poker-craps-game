@@ -2,14 +2,17 @@ from asyncio import sleep
 
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.dispatcher.filters import Text
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
-from tgbot.keyboards.inline_fool import fool_start_game, show_done_button, fool_player_turn, propose_more_cards
+from tgbot.keyboards.inline_fool import fool_start_game, show_done_button, propose_more_cards
+from tgbot.keyboards.reply import fool_game_actions
 from tgbot.misc.factories import for_fool_player_turn, for_fool_propose_more_cards_done, for_fool_player_cover
+from tgbot.services.default_commands import get_default_commands
 from tgbot.services.fool_service import create_deck, play_fool_round, hand_out_cards, pick_card, place_card_on_desk, \
     bot_try_cover, check_who_first, bot_turn, bot_add_all, add_cards_to_player, bot_full_up, player_full_up, \
     add_cards_to_bot, check_more_cards
-from tgbot.services.printer import print_fool_rules
+from tgbot.services.printer import print_fool_rules, print_emotion
 
 
 async def fool(message: Message, state: FSMContext):
@@ -45,7 +48,7 @@ async def start_fool(call: CallbackQuery, state: FSMContext):
         data['trump'] = trump
         data['last_winner'] = who_first
 
-    await call.message.answer(f"👍 Начинаем новую игру.\nПоехали!")
+    await call.message.answer(f"👍 Начинаем новую игру.\nПоехали!", reply_markup=fool_game_actions)
     await sleep(3)
     await play_fool_round(call.message, state)
     await call.message.delete()
@@ -118,9 +121,22 @@ async def next_fool_round(call: CallbackQuery, state: FSMContext):
     await play_fool_round(call.message, state)
 
 
+async def give_up_fool(message: Message, state: FSMContext):
+    """
+    Хендлер, реагирующий на нажатие текстовой кнопки 'Сдаюсь'.
+    Вызывает функцию завершения игры finish_blackjack с победой бота.
+    """
+    await print_emotion(message, True)
+    await state.finish()
+    await sleep(3)
+    commands = await get_default_commands()
+    await message.answer(f"🤖 Во что сыграем?\n\n{commands}", reply_markup=ReplyKeyboardRemove())
+
+
 def register_fool(dp: Dispatcher):
     dp.register_message_handler(fool, commands=["fool"], state="*")
     dp.register_callback_query_handler(start_fool, text='fool_start_game', state="*")
+    dp.register_message_handler(give_up_fool, Text(equals='⛔️ Сдаться и остаться в дураках ⛔️'), state="*")
     dp.register_callback_query_handler(player_takes, text='player_takes', state="*")
     dp.register_callback_query_handler(next_fool_round, text='next_fool_round', state="*")
     dp.register_callback_query_handler(player_covers, for_fool_player_cover.filter(), state="*")

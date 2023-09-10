@@ -185,7 +185,9 @@ async def print_fool_rules(message: Message) -> None:
     """
     Функция печатает правила игры в "Дурака".
     """
-    text = ('<b>Правила игры в "Дурака":</b>\n\n')
+    text = ('<b>Правила игры в "Дурака":</b>\n\n'
+            'Я уверен, ты их знаешь и так.\nНо вкратце напомню: тебе нужно оставить меня (🤖 бота) в дураках.\n'
+            'Всё понятно?')
     await message.answer(text, parse_mode='html')
 
 
@@ -207,6 +209,9 @@ async def print_fool_desk(message: Message, state: FSMContext) -> None:
     player_cards = states.get('player_cards')
     bot_cards = states.get('bot_cards')
     trump = states.get('trump')
-    # result = f"({trump}) {'🀄' * len(deck)}\n\n🤖 Бот: {'🀄' * len(bot_cards)}\n🤵 Вы: {', '.join(player_cards)}"
-    result = f"({trump}) {'🀄' * len(deck)}\n\n🤖 Бот: {', '.join(bot_cards)}\n🤵 Вы: {', '.join(player_cards)}"
-    await message.answer(result)
+    trump_used = states.get('trump_used')
+
+    result = f"({trump if not trump_used else trump[-1]}) {'🀄' * len(deck)}\n\n" \
+             f"🤖 <b>Бот:</b> {'🀄' * len(bot_cards)}\n" \
+             f"🤵 <b>Вы:</b> {', '.join(player_cards)}"
+    await message.answer(result, parse_mode='html')
