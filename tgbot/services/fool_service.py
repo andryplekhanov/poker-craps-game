@@ -23,8 +23,8 @@ async def check_who_first(trump: str, player_cards: list[str], bot_cards: list[s
     Функция проверяет карты бота и игрока и назначает, кто ходит первым.
     По правилам - первый ход того, у кого меньше козырь.
     """
-    players_trumps = [player_card for player_card in player_cards if player_card[-1] == trump[-1]]
-    bots_trumps = [bot_card for bot_card in bot_cards if bot_card[-1] == trump[-1]]
+    players_trumps = [player_card for player_card in player_cards if player_card[-2] == trump[-2]]
+    bots_trumps = [bot_card for bot_card in bot_cards if bot_card[-2] == trump[-2]]
 
     if players_trumps and bots_trumps:
         players_trumps_values = [RUS_CARDS_VALUES[card] for card in players_trumps]
@@ -107,27 +107,27 @@ async def bot_choose_card_for_cover(state: FSMContext, card: str) -> Union[str, 
     trump = states.get('trump')  # '9♠'
     deck = states.get('deck')
     player_value = RUS_CARDS_VALUES[card]  # 8
-    player_suit = card[-1]  # '♣'
+    player_suit = card[-2]  # '♣'
 
-    if player_suit == trump[-1] and player_value in [11, 12, 13, 14] and len(deck) > 6:  # Если игрок сходил козырем и карта игрока == В, Д, К, Т и в колоде больше 6 карт, то бот не кроет карту
+    if player_suit == trump[-2] and player_value in [11, 12, 13, 14] and len(deck) > 6:  # Если игрок сходил козырем и карта игрока == В, Д, К, Т и в колоде больше 6 карт, то бот не кроет карту
         return None
 
     # Ищем карты (не козыри), чтобы покрыть карту игрока.
     cards_for_cover = [
         bot_card for bot_card in bot_cards
-        if (bot_card[-1] == player_suit and RUS_CARDS_VALUES[bot_card] > player_value)
+        if (bot_card[-2] == player_suit and RUS_CARDS_VALUES[bot_card] > player_value)
     ]  # ['10♣', '9♣'] Здесь только те карты, которые совпадают по масти с картой игрока, и которые больше её по значению
     if cards_for_cover:
         cards_for_cover_values = [RUS_CARDS_VALUES[bot_card] for bot_card in cards_for_cover]  # [10, 9]
         card_for_cover = [bot_card for bot_card in cards_for_cover
                           if RUS_CARDS_VALUES[bot_card] == min(cards_for_cover_values)]  # ['9♣']
-        if player_suit == trump[-1] and RUS_CARDS_VALUES[card_for_cover[0]] in [12, 13, 14] and len(deck) > 6:  # Если игрок сходил козырем и бот может покрыть его только Д, К, Т и в колоде более 6 карт, то бот не кроет карту
+        if player_suit == trump[-2] and RUS_CARDS_VALUES[card_for_cover[0]] in [12, 13, 14] and len(deck) > 6:  # Если игрок сходил козырем и бот может покрыть его только Д, К, Т и в колоде более 6 карт, то бот не кроет карту
             return None
         return card_for_cover[0]
     else:  # Если не нашлось карты
-        if player_suit == trump[-1]:  # Если игрок сходил козырем и бот не нашел карту, чтобы его покрыть
+        if player_suit == trump[-2]:  # Если игрок сходил козырем и бот не нашел карту, чтобы его покрыть
             return None
-        trumps_for_cover = [bot_card for bot_card in bot_cards if bot_card[-1] == trump[-1]]  # ['7♠', 'Д♠'] Если игрок сходил НЕ козырем и бот не нашел обычную карту, чтобы его покрыть, то бот ищет козыри
+        trumps_for_cover = [bot_card for bot_card in bot_cards if bot_card[-2] == trump[-2]]  # ['7♠', 'Д♠'] Если игрок сходил НЕ козырем и бот не нашел обычную карту, чтобы его покрыть, то бот ищет козыри
         if trumps_for_cover:  # Если бот нашел козырь
             trumps_for_cover_values = [RUS_CARDS_VALUES[trump_for_cover] for trump_for_cover in trumps_for_cover]  # [7, 12]
             if len(deck) > 5 and all([trump_value in [12, 13, 14] for trump_value in trumps_for_cover_values]):  # Если в колоде больше 5 карт и все козыри бота == Д, К, Т, то бот не кроет карту
@@ -151,13 +151,13 @@ async def bot_choose_card(state: FSMContext) -> Union[str, None]:
     if not bot_cards:
         return None
 
-    common_cards = [card for card in bot_cards if card[-1] != trump[-1]]  # ['10♣', '8♦', '9♥', '7♣']
+    common_cards = [card for card in bot_cards if card[-2] != trump[-2]]  # ['10♣', '8♦', '9♥', '7♣']
     if common_cards:
         common_cards_values = [RUS_CARDS_VALUES[card] for card in common_cards]  # [10, 8, 9, 7]
         result = [card for card in common_cards if RUS_CARDS_VALUES[card] == min(common_cards_values)]  # ['7♣']
         return result[0]
 
-    trump_cards = [card for card in bot_cards if card[-1] == trump[-1]]  # ['7♠', 'Д♠']
+    trump_cards = [card for card in bot_cards if card[-2] == trump[-2]]  # ['7♠', 'Д♠']
     trump_cards_values = [RUS_CARDS_VALUES[card] for card in trump_cards]  # [7, 12]
     result = [card for card in trump_cards if RUS_CARDS_VALUES[card] == min(trump_cards_values)]  # ['7♠']
     return result[0]
@@ -181,17 +181,17 @@ async def bot_choose_card_to_add(state: FSMContext) -> Union[str, None]:
     if not cards_bot_can_add:
         return None
 
-    common_cards = [card for card in cards_bot_can_add if card[-1] != trump[-1]]  # ['10♦']
+    common_cards = [card for card in cards_bot_can_add if card[-2] != trump[-2]]  # ['10♦']
     if common_cards:
         if RUS_CARDS_VALUES[common_cards[0]] in [13, 14] and len(deck) > 0:
             return None
         return common_cards[0]
 
-    all_trumps = [card for card in bot_cards if card[-1] == trump[-1]]
+    all_trumps = [card for card in bot_cards if card[-2] == trump[-2]]
     if len(all_trumps) == 1 and len(deck) > 0 and len(bot_cards) > 1:
         return None
 
-    trump_cards = [card for card in cards_bot_can_add if card[-1] == trump[-1]]  # ['Д♠']
+    trump_cards = [card for card in cards_bot_can_add if card[-2] == trump[-2]]  # ['Д♠']
     trump_cards_values = [RUS_CARDS_VALUES[card] for card in trump_cards]  # [12]
     min_trump = [card for card in trump_cards if RUS_CARDS_VALUES[card] == min(trump_cards_values)][0]  # 'Д♠'
 

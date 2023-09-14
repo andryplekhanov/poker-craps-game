@@ -9,9 +9,9 @@ async def check_players_card_for_cover(player_card: str, bot_card: str, trump: s
     Функция проверяет карту ирока для создания кнопки.
     Если карта не подходит, чтобы ею покрыть карту бота, реакции на нажатие не будет.
     """
-    if RUS_CARDS_VALUES[bot_card] < RUS_CARDS_VALUES[player_card] and player_card[-1] == bot_card[-1]:
+    if RUS_CARDS_VALUES[bot_card] < RUS_CARDS_VALUES[player_card] and player_card[-2] == bot_card[-2]:
         return InlineKeyboardButton(text=player_card, callback_data=for_fool_player_cover.new(card=player_card))
-    elif player_card[-1] == trump[-1] and bot_card[-1] != trump[-1]:
+    elif player_card[-1] == trump[-1] and bot_card[-2] != trump[-2]:
         return InlineKeyboardButton(text=player_card, callback_data=for_fool_player_cover.new(card=player_card))
     return InlineKeyboardButton(text=player_card, callback_data='no_react')
 
