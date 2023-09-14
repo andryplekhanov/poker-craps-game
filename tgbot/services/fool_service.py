@@ -19,6 +19,10 @@ async def create_deck() -> list[str]:
 
 
 async def check_who_first(trump: str, player_cards: list[str], bot_cards: list[str]) -> str:
+    """
+    Функция проверяет карты бота и игрока и назначает, кто ходит первым.
+    По правилам - первый ход того, у кого меньше козырь.
+    """
     players_trumps = [player_card for player_card in player_cards if player_card[-1] == trump[-1]]
     bots_trumps = [bot_card for bot_card in bot_cards if bot_card[-1] == trump[-1]]
 
@@ -63,11 +67,18 @@ async def pick_card(state: FSMContext) -> Union[str, None]:
 
 
 async def hand_out_cards(state: FSMContext, num: int) -> list[str]:
+    """
+    Функция выбирает из колоды карты, вызывая функцию pick_card num раз.
+    Возвращает список строк в формате ['Т♣️', 'Д♦️', '6♠️'...]
+    """
     cards = [await pick_card(state) for _ in range(num)]
     return [card for card in cards if card is not None]
 
 
 async def place_card_on_desk(state: FSMContext, card: str, place_for: str) -> None:
+    """
+    Функция помещает карту на стол. Карта удаляется из рук у того, кто её кладёт.
+    """
     states = await state.get_data()
     desk = states.get('desk')
     desk.append(card)
@@ -129,6 +140,10 @@ async def bot_choose_card_for_cover(state: FSMContext, card: str) -> Union[str, 
 
 
 async def bot_choose_card(state: FSMContext) -> Union[str, None]:
+    """
+    Функция решает, какой картой бот должен сходить.
+    Возвращает карту в формате строки '10♣' или None (если карт нет).
+    """
     states = await state.get_data()
     bot_cards = states.get('bot_cards')  # ['10♣', '7♠', '8♦', '9♥', 'Д♠', '7♣']
     trump = states.get('trump')  # '9♠'
@@ -149,6 +164,10 @@ async def bot_choose_card(state: FSMContext) -> Union[str, None]:
 
 
 async def bot_choose_card_to_add(state: FSMContext) -> Union[str, None]:
+    """
+    Функция решает, какую карту бот должен добавить игроку в придачу.
+    Возвращает карту в формате строки '10♣' или None (если добавить нечего).
+    """
     states = await state.get_data()
     bot_cards = states.get('bot_cards')  # ['7♠', '10♦', '9♥', 'Д♠', '7♣']
     if not bot_cards:
@@ -184,7 +203,11 @@ async def bot_choose_card_to_add(state: FSMContext) -> Union[str, None]:
     return min_trump
 
 
-async def player_need_to_cover(message: Message, state: FSMContext, bot_card: str):
+async def player_need_to_cover(message: Message, state: FSMContext, bot_card: str) -> None:
+    """
+    Функция предлагает игроку покрыть карту бота.
+    Показывает клавиатуру с картами.
+    """
     states = await state.get_data()
     cards = states.get('player_cards')
     trump = states.get('trump')
@@ -193,6 +216,9 @@ async def player_need_to_cover(message: Message, state: FSMContext, bot_card: st
 
 
 async def check_more_cards(state: FSMContext, check_for: str) -> Union[list, None]:
+    """
+    Функция проверяет, есть ли у игрока ещё карты, которые можно добавить в придачу.
+    """
     states = await state.get_data()
     cards_on_desk = states.get('desk')
     cards = states.get('player_cards') if check_for == 'player' else states.get('bot_cards')
@@ -200,11 +226,15 @@ async def check_more_cards(state: FSMContext, check_for: str) -> Union[list, Non
     result = [card for card in cards if RUS_CARDS_VALUES[card] in values]
     if result:
         return result
-    else:
-        return None
+    return None
 
 
 async def bot_try_cover(message: Message, state: FSMContext, card: str) -> None:
+    """
+    Функция проверяет, есть ли у бота карты, которыми он может покрыть карту игрока.
+    Если есть - кроет.
+    Если нет - берёт.
+    """
     card_for_cover = await bot_choose_card_for_cover(state, card)
     if card_for_cover:
         await place_card_on_desk(state, card_for_cover, 'bot')
@@ -227,7 +257,11 @@ async def bot_try_cover(message: Message, state: FSMContext, card: str) -> None:
             await message.answer('🤵 Нету...', reply_markup=await show_done_button(action='take'))
 
 
-async def bot_add_all(state: FSMContext) -> list:
+async def bot_add_all(state: FSMContext) -> list[str]:
+    """
+    Функция собирает в список все карты, которые бот может добавить в придачу, когда игрок решал взять.
+    Возвращает список строк с картами.
+    """
     cards = list()
     card = await bot_choose_card_to_add(state)
     if card:
@@ -238,6 +272,9 @@ async def bot_add_all(state: FSMContext) -> list:
 
 
 async def add_cards_to_player(state: FSMContext) -> None:
+    """
+    Функция берёт карты, которые на столе и добавляет их к картам игрока.
+    """
     states = await state.get_data()
     player_cards = states.get('player_cards')
     desk = states.get('desk')
@@ -247,6 +284,9 @@ async def add_cards_to_player(state: FSMContext) -> None:
 
 
 async def add_cards_to_bot(state: FSMContext) -> None:
+    """
+    Функция берёт карты, которые на столе и добавляет их к картам бота.
+    """
     states = await state.get_data()
     bot_cards = states.get('bot_cards')
     desk = states.get('desk')
@@ -255,7 +295,13 @@ async def add_cards_to_bot(state: FSMContext) -> None:
         data['bot_cards'] = bot_cards
 
 
-async def bot_turn(message: Message, state: FSMContext, target: str):
+async def bot_turn(message: Message, state: FSMContext, target: str) -> None:
+    """
+    Функция делает ход за бота.
+    В зависимости от ситуации (target), выбирает карту для хода или для добавленя в придачу.
+    Если карта не выбрана - предлагает игроку ход.
+    Иначе - предлагает игроку покрыть карту.
+    """
     await sleep(2)
     if target == 'turn':
         card = await bot_choose_card(state)
@@ -274,6 +320,9 @@ async def bot_turn(message: Message, state: FSMContext, target: str):
 
 
 async def bot_full_up(state: FSMContext) -> None:
+    """
+    Функция пополняет карты на руках у бота до 6 шт.
+    """
     states = await state.get_data()
     bot_cards = states.get('bot_cards')
     if len(bot_cards) < 6:
@@ -284,6 +333,9 @@ async def bot_full_up(state: FSMContext) -> None:
 
 
 async def player_full_up(state: FSMContext) -> None:
+    """
+    Функция пополняет карты на руках у игрока до 6 шт.
+    """
     states = await state.get_data()
     player_cards = states.get('player_cards')
     if len(player_cards) < 6:
@@ -294,6 +346,10 @@ async def player_full_up(state: FSMContext) -> None:
 
 
 async def check_winner(state: FSMContext) -> bool:
+    """
+    Функция проверяет, есть ли победитель.
+    Есть, если в колоде нет карт И козырь уже использовали И (у игрока или у бота не осталось карт на руках).
+    """
     states = await state.get_data()
     player_cards, bot_cards = states.get('player_cards'), states.get('bot_cards')
     deck = states.get('deck')
@@ -303,6 +359,9 @@ async def check_winner(state: FSMContext) -> bool:
 
 
 async def finish_fool_game(message: Message, state: FSMContext) -> None:
+    """
+    Функция завершает игру. Поздравляет победителя и показывает главное меню.
+    """
     states = await state.get_data()
     player_cards, bot_cards = states.get('player_cards'), states.get('bot_cards')
     await sleep(2)
@@ -322,6 +381,12 @@ async def finish_fool_game(message: Message, state: FSMContext) -> None:
 
 
 async def play_fool_round(message: Message, state: FSMContext) -> None:
+    """
+    Функция печатает карты на столе и на руках.
+    Проверяет, нет ли победителя в игре.
+    Если нет, начинает новый раунд.
+    Если есть, вызывает функцию завершения игры.
+    """
     async with state.proxy() as data:
         data['desk'] = []
     await print_fool_desk(message, state)

@@ -5,6 +5,10 @@ from tgbot.services.printer import RUS_CARDS_VALUES
 
 
 async def check_players_card_for_cover(player_card: str, bot_card: str, trump: str) -> InlineKeyboardButton:
+    """
+    Функция проверяет карту ирока для создания кнопки.
+    Если карта не подходит, чтобы ею покрыть карту бота, реакции на нажатие не будет.
+    """
     if RUS_CARDS_VALUES[bot_card] < RUS_CARDS_VALUES[player_card] and player_card[-1] == bot_card[-1]:
         return InlineKeyboardButton(text=player_card, callback_data=for_fool_player_cover.new(card=player_card))
     elif player_card[-1] == trump[-1] and bot_card[-1] != trump[-1]:
@@ -13,6 +17,9 @@ async def check_players_card_for_cover(player_card: str, bot_card: str, trump: s
 
 
 async def prepare_big_keyboard(buttons: list, keyboard: InlineKeyboardMarkup) -> InlineKeyboardMarkup:
+    """
+    Функция разбивает инлайн-клавиатуру с большим количеством кнопок на насколько рядов по 6 кнопок.
+    """
     keyboard.row(*buttons[:6])
     if len(buttons) > 6:
         keyboard.row(*buttons[6:12])
@@ -34,6 +41,10 @@ async def fool_start_game() -> InlineKeyboardMarkup:
 
 
 async def fool_player_turn(cards: list, action: str) -> InlineKeyboardMarkup:
+    """
+    Клавиатура с кнопкой - карты игрока, чтобы сделать ход.
+    """
+
     keyboard = InlineKeyboardMarkup(row_width=6)
     buttons = list()
     for card in cards:
@@ -43,6 +54,10 @@ async def fool_player_turn(cards: list, action: str) -> InlineKeyboardMarkup:
 
 
 async def propose_more_cards(cards: list, action: str) -> InlineKeyboardMarkup:
+    """
+    Клавиатура с кнопкой - карты игрока, которые он может добавить боту в придачу.
+    """
+
     keyboard = InlineKeyboardMarkup(row_width=6)
     buttons = list()
     for card in cards:
@@ -53,6 +68,10 @@ async def propose_more_cards(cards: list, action: str) -> InlineKeyboardMarkup:
 
 
 async def player_cover(player_cards: list, bot_card: str, trump: str) -> InlineKeyboardMarkup:
+    """
+    Клавиатура с кнопкой - карты игрока, которыми он может покрыть карту бота.
+    """
+
     keyboard = InlineKeyboardMarkup(row_width=6)
     buttons = list()
     for card in player_cards:
@@ -63,6 +82,10 @@ async def player_cover(player_cards: list, bot_card: str, trump: str) -> InlineK
 
 
 async def show_done_button(action: str) -> InlineKeyboardMarkup:
+    """
+    Клавиатура с кнопкой Ok - у игрока больше нечего добавлять боту в придачу.
+    """
+
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton(text='♣️ Ok ♠️',
                                       callback_data=for_fool_propose_more_cards_done.new(action=action)))
@@ -70,6 +93,10 @@ async def show_done_button(action: str) -> InlineKeyboardMarkup:
 
 
 async def show_next_button() -> InlineKeyboardMarkup:
+    """
+    Клавиатура с кнопкой Далее - игрок не желает больше добавлять карты боту в придачу.
+    """
+
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton(text='Далее', callback_data="next_fool_round"))
     return keyboard

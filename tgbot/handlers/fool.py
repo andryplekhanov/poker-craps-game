@@ -32,10 +32,10 @@ async def start_fool(call: CallbackQuery, state: FSMContext):
     """
     await call.message.edit_reply_markup(reply_markup=None)
 
-    deck = await create_deck()
+    deck = await create_deck()  # создаём колоду
     async with state.proxy() as data:
         data['deck'] = deck
-        data['trump_used'] = False
+        data['trump_used'] = False  # козырь на столе (не использован)
 
     trump = await pick_card(state)
     player_cards = await hand_out_cards(state, 6)
@@ -55,6 +55,10 @@ async def start_fool(call: CallbackQuery, state: FSMContext):
 
 
 async def player_put_card(call: CallbackQuery, callback_data: dict, state: FSMContext):
+    """
+    Хендлер, реагирующий на нажатие карты, когда игрок делает ход.
+    В зависимости от ситуации (callback_data.get('action')), бот будет пытаться покрыть карту, либо будет брать.
+    """
     await call.message.edit_reply_markup(reply_markup=None)
     card = callback_data.get('card')
     await place_card_on_desk(state, card, place_for='player')
@@ -68,12 +72,15 @@ async def player_put_card(call: CallbackQuery, callback_data: dict, state: FSMCo
         await sleep(1)
         if more_cards is not None:
             await call.message.answer('Вы можете добавить эти карты',
-                                 reply_markup=await propose_more_cards(cards=more_cards, action='add'))
+                                      reply_markup=await propose_more_cards(cards=more_cards, action='add'))
         else:
             await call.message.answer('🤵 Нету...', reply_markup=await show_done_button(action='take'))
 
 
 async def player_covers(call: CallbackQuery, callback_data: dict, state: FSMContext):
+    """
+    Хендлер, реагирующий на нажатие карты, когда игрок кроет карту бота.
+    """
     await call.message.edit_reply_markup(reply_markup=None)
     card = callback_data.get('card')
     await place_card_on_desk(state, card, place_for='player')
@@ -82,6 +89,9 @@ async def player_covers(call: CallbackQuery, callback_data: dict, state: FSMCont
 
 
 async def player_takes(call: CallbackQuery, state: FSMContext):
+    """
+    Хендлер, реагирующий на нажатие кнопки "Беру", когда игрок берёт карту бота.
+    """
     await call.message.edit_reply_markup(reply_markup=None)
     cards = await bot_add_all(state)
     if cards:
@@ -97,6 +107,11 @@ async def player_takes(call: CallbackQuery, state: FSMContext):
 
 
 async def player_propose_more_cards_done(call: CallbackQuery, callback_data: dict, state: FSMContext):
+    """
+    Хендлер, реагирующий на нажатие кнопки "Готово", когда игрок добавляет карты, чтобы их взял бот.
+    В зависимости от ситуации (callback_data.get('action')), бот либо отбился (тогда он назначается победителем раунда),
+    либо берёт карты себе.
+    """
     await call.message.edit_reply_markup(reply_markup=None)
     await player_full_up(state)
 
@@ -113,8 +128,10 @@ async def player_propose_more_cards_done(call: CallbackQuery, callback_data: dic
 
 
 async def next_fool_round(call: CallbackQuery, state: FSMContext):
+    """
+    Хендлер, реагирующий на нажатие кнопки "Ок", после того, как игрок отбился от карт бота.
+    """
     await call.message.edit_reply_markup(reply_markup=None)
-    states = await state.get_data()
     await bot_full_up(state)
     await player_full_up(state)
     await sleep(2)
@@ -124,7 +141,7 @@ async def next_fool_round(call: CallbackQuery, state: FSMContext):
 async def give_up_fool(message: Message, state: FSMContext):
     """
     Хендлер, реагирующий на нажатие текстовой кнопки 'Сдаюсь'.
-    Вызывает функцию завершения игры finish_blackjack с победой бота.
+    Завершает игру с победой бота.
     """
     await print_emotion(message, True)
     await state.finish()
