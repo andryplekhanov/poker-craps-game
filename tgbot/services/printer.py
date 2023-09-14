@@ -56,9 +56,21 @@ UNHAPPY_EMOTIONS = [
     '🤖 Радуйся, ты победил! Но я всё равно круче! Сразимся ещё раз?',
 ]
 
-SUITS = ['♠️', '♥️', '♣️', '♦️']
+SUITS = ['♠️', '♥️️', '♣️', '♦️']
 
 VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+
+RUS_CARDS_VALUES = {
+    '6♠️': 6, '6♥️️': 6, '6♣️': 6, '6♦️': 6,
+    '7♠️': 7, '7♥️️': 7, '7♣️': 7, '7♦️': 7,
+    '8♠️': 8, '8♥️️': 8, '8♣️': 8, '8♦️': 8,
+    '9♠️': 9, '9♥️️': 9, '9♣️': 9, '9♦️': 9,
+    '10♠️': 10, '10♥️️': 10, '10♣️': 10, '10♦️': 10,
+    'В♠️': 11, 'В♥️️': 11, 'В♣️': 11, 'В♦️': 11,
+    'Д♠️': 12, 'Д♥️️': 12, 'Д♣️': 12, 'Д♦️': 12,
+    'К♠️': 13, 'К♥️️': 13, 'К♣️': 13, 'К♦️': 13,
+    'Т♠️': 14, 'Т♥️️': 14, 'Т♣️': 14, 'Т♦️': 14,
+}
 
 
 async def print_dice(message: Message, dices: list[int]) -> None:
@@ -169,6 +181,16 @@ async def print_blackjack_rules(message: Message) -> None:
     await message.answer(text, parse_mode='html')
 
 
+async def print_fool_rules(message: Message) -> None:
+    """
+    Функция печатает правила игры в "Дурака".
+    """
+    text = ('<b>Правила игры в "Дурака":</b>\n\n'
+            'Я уверен, ты их знаешь и так.\nНо вкратце напомню: тебе нужно оставить меня (🤖 бота) в дураках.\n'
+            'Всё понятно?')
+    await message.answer(text, parse_mode='html')
+
+
 async def print_cards(message: Message, cards: list, print_as: str) -> None:
     """
     Функция печатает карты при игре в "Blackjack".
@@ -176,3 +198,20 @@ async def print_cards(message: Message, cards: list, print_as: str) -> None:
     """
     result = ', '.join(cards) if print_as == 'open' else '🀄' * len(cards)
     await message.answer(result)
+
+
+async def print_fool_desk(message: Message, state: FSMContext) -> None:
+    """
+    Функция печатает карты на столе и на руках при игре в "Дурак".
+    """
+    states = await state.get_data()
+    deck = states.get('deck')
+    player_cards = states.get('player_cards')
+    bot_cards = states.get('bot_cards')
+    trump = states.get('trump')
+    trump_used = states.get('trump_used')
+
+    result = f"({trump if not trump_used else trump[-2]}) {'🀄' * len(deck)}\n\n" \
+             f"🤖 <b>Бот:</b> {'🀄' * len(bot_cards)}\n" \
+             f"🤵 <b>Вы:</b> {', '.join(player_cards)}"
+    await message.answer(result, parse_mode='html')

@@ -8,12 +8,18 @@ class Games(StatesGroup):
     Attributes:
         round_counter (int): счетчик раундов.
         last_winner (str): победитель прошлого раунда.
+        trump (str): козырь для игры в Дурака.
+        trump_used (bool): козырь забрали.
         deck (list): колода карт.
+        desk (list): карты в игре.
     """
 
     round_counter = State()
     last_winner = State()
     deck = State()
+    desk = State()
+    trump = State()
+    trump_used = State()
 
 
 class Players(StatesGroup):

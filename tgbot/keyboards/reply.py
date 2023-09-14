@@ -28,3 +28,12 @@ blackjack_game_actions = ReplyKeyboardMarkup(
     ],
     one_time_keyboard=True
 )
+
+
+fool_game_actions = ReplyKeyboardMarkup(
+    resize_keyboard=True,
+    keyboard=[
+        [KeyboardButton(text='⛔️ Сдаться и остаться в дураках ⛔️')],
+    ],
+    one_time_keyboard=True
+)

@@ -10,6 +10,7 @@ from tgbot.filters.admin import AdminFilter
 from tgbot.handlers.blackjack import register_blackjack
 from tgbot.handlers.craps import register_craps
 from tgbot.handlers.echo import register_echo
+from tgbot.handlers.fool import register_fool
 from tgbot.handlers.gallows import register_gallows
 from tgbot.handlers.help import register_help
 from tgbot.handlers.start import register_start
@@ -32,6 +33,7 @@ def register_all_handlers(dp):
     register_craps(dp)
     register_gallows(dp)
     register_blackjack(dp)
+    register_fool(dp)
     register_help(dp)
 
     register_echo(dp)
