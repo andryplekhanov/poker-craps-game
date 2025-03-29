@@ -1,0 +1,10 @@
+version: '3.9'
+
+services:
+  bot:
+    build: .
+    container_name: ${BOT_CONTAINER_NAME}
+    stop_signal: SIGINT
+    restart: always
+    env_file:
+      - ./.env
